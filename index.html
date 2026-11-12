@@ -556,6 +556,7 @@ const catName = key => (CATS.find(c => c.key === key) || CAT_UNKNOWN).name;
 const view = { axis: "year", mode: "count", bw: 30, dots: true, split: { price: null, year: null, km: null } };
 let stores = [];   // {key, role, name, url, status: loading|done|error, data, error, el}
 let runId = 0;
+let activeLoad = null;
 
 /* ---------------- サイドメニューの開閉 ---------------- */
 function setCollapsed(c, save = true) {
@@ -640,8 +641,11 @@ $("#form").addEventListener("submit", async e => {
   saveInputs();
   $("#workspace-status").textContent = "店舗別の比較分析";
 
+  activeLoad?.abort();
+  activeLoad = new AbortController();
+  const signal = activeLoad.signal;
   const run = ++runId;
-  stores = entries.map((x, i) => ({ ...x, key: i, name: x.name || hostOf(x.url), status: "loading" }));
+  stores = entries.map((x, i) => ({ ...x, key: i, name: x.name || hostOf(x.url), status: "queued", request: { basis: $("#basis").value, max_pages: $("#pages").value } }));
   view.split = { price: null, year: null, km: null };
   $("#empty").hidden = true;
   $("#toolbar").hidden = false;
@@ -650,20 +654,64 @@ $("#form").addEventListener("submit", async e => {
 
   const go = $("#go");
   go.disabled = true; go.textContent = "読み込み中…";
-  await Promise.allSettled(stores.map(s => load(s, run)));
+  // Match the server's two scrape slots; additional stores wait in this queue.
+  const pending = stores.slice();
+  let next = 0;
+  await Promise.allSettled(Array.from({ length: Math.min(2, pending.length) }, async () => {
+    while (next < pending.length && run === runId && !signal.aborted) {
+      await load(pending[next++], run, signal);
+    }
+  }));
   if (run === runId) { go.disabled = false; go.textContent = "在庫を比較する　→"; }
 });
 
-async function load(s, run) {
-  const q = new URLSearchParams({ url: s.url, basis: $("#basis").value, max_pages: $("#pages").value });
+function retryDelay(value, attempt) {
+  const seconds = Number(value);
+  if (value && Number.isFinite(seconds) && seconds >= 0) return Math.max(1000, seconds * 1000);
+  const date = value && Date.parse(value);
+  if (date && Number.isFinite(date)) return Math.max(1000, date - Date.now());
+  return Math.min(15000, 1000 * 2 ** attempt);
+}
+
+function waitForRetry(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) { reject(new DOMException("Aborted", "AbortError")); return; }
+    const abort = () => { clearTimeout(timer); reject(new DOMException("Aborted", "AbortError")); };
+    const timer = setTimeout(() => { signal.removeEventListener("abort", abort); resolve(); }, ms);
+    signal.addEventListener("abort", abort, { once: true });
+  });
+}
+
+async function load(s, run, signal) {
+  const q = new URLSearchParams({ url: s.url, ...s.request });
+  const deadline = Date.now() + 180000;
   try {
-    const res = await fetch("/api/analyze?" + q);
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(json.detail || `サーバーがエラーを返しました（${res.status}）`);
-    s.data = json; s.status = "done";
+    for (let attempt = 0; ; attempt++) {
+      if (run !== runId || signal.aborted) return;
+      s.status = "loading";
+      s.progress = attempt ? "空きを確認しています…" : "";
+      renderAll();
+      const res = await fetch("/api/analyze?" + q, { signal });
+      const json = await res.json().catch(() => ({}));
+      if (run !== runId || signal.aborted) return;
+      if (res.status === 503 || res.status === 429) {
+        const delay = retryDelay(res.headers.get("Retry-After"), attempt);
+        if (attempt >= 24 || Date.now() + delay > deadline) {
+          throw new Error("混雑が続いています。時間をおいて、もう一度比較してください。");
+        }
+        s.progress = "取得の順番待ちです（" + Math.ceil(delay / 1000) + "秒後に自動再試行）";
+        renderAll();
+        await waitForRetry(delay, signal);
+        continue;
+      }
+      if (!res.ok) throw new Error(json.detail || "サーバーがエラーを返しました（" + res.status + "）");
+      s.data = json; s.status = "done";
+      break;
+    }
   } catch (err) {
+    if (run !== runId || signal.aborted) return;
     s.status = "error";
-    s.error = err instanceof TypeError ? "アプリのサーバーに接続できません。起動しているか確認してください。" : err.message;
+    s.error = err instanceof TypeError ? "アプリのサーバーに接続できません。通信環境を確認して再試行してください。" : err.message;
   }
   if (run === runId) renderAll();
 }
@@ -865,12 +913,13 @@ function renderPanel(s, sh) {
 
   const placeholder = html => { Plotly.purge(chart); chart.innerHTML = html; };
   const clear = () => { stats.innerHTML = ""; cats.innerHTML = ""; notes.innerHTML = ""; rows.hidden = true; };
-  if (s.status === "loading") {
-    placeholder(`<div class="loading" style="height:100%"><span>読み込み中（最大${esc($("#pages").value)}ページ）</span><span class="track"></span></div>`);
+  if (s.status === "loading" || s.status === "queued") {
+    const progress = s.status === "queued" ? "ほかの店舗の取得が終わるまで順番待ちです" : s.progress || "読み込み中（最大" + s.request.max_pages + "ページ）";
+    placeholder(`<div class="loading" style="height:100%"><span>${esc(progress)}</span><span class="track"></span></div>`);
     clear(); return;
   }
   if (s.status === "error") {
-    placeholder(`<div class="failed" style="height:100%"><strong>読み込めませんでした</strong><span>${esc(s.error)}</span><span>URLが在庫一覧ページになっているか確認してください。</span></div>`);
+    placeholder(`<div class="failed" style="height:100%"><strong>読み込めませんでした</strong><span>${esc(s.error)}</span><span>取得先や通信状況をご確認のうえ、再試行してください。</span></div>`);
     clear(); return;
   }
 
@@ -1043,6 +1092,7 @@ function startDemo() {
     $("#form-msg").textContent = "グラフライブラリを読み込めませんでした。通信環境を確認してください。";
     return;
   }
+  activeLoad?.abort();
   ++runId; // Ignore responses from a previous live request.
   $("#go").disabled = false;
   $("#go").textContent = "在庫を比較する　→";
