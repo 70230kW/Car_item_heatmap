@@ -4,10 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>在庫ヒートマップ比較</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
-<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<script src="/assets/plotly-2.35.2.min.js" charset="utf-8"></script>
 <style>
   /* 色: ナンバープレートの緑（事業用=緑地に白、自家用=白地に緑）を店舗の識別に、
      同じ緑の濃淡を在庫の集まり具合に使う */
@@ -276,6 +273,107 @@
     .legend { margin-left: 0; }
     .empty { margin-top: 32px; }
   }
+
+  /* Workspace visual design */
+  :root {
+    --bg:#f4f6f5; --panel:#fff; --ink:#182f29; --ink-2:#52685f;
+    --ink-3:#708078; --line:#dce5df; --field:#f7f9f7;
+    --plate:#176c4b; --plate-ink:#fff; --plate-soft:#176c4b; --focus:#32a979;
+    --warn-bg:#fff4d6; --warn-ink:#7a5000; --err-ink:#ad3737;
+    --heat-0:#fff; --heat-1:#e2f2e7; --heat-2:#b2dec4;
+    --heat-3:#70be97; --heat-4:#2d9366; --heat-5:#125c3d;
+    color-scheme:light;
+  }
+  body { font-size:14px; }
+  .app { grid-template-columns:310px minmax(0,1fr); }
+  .setup { background:#123c30; border:0; color:#f0f6f2; }
+  .setup-body { width:310px; padding:30px 24px; }
+  .brand { align-items:center; }
+  .brand h1 { font-size:19px; letter-spacing:.03em; margin:0; }
+  .brand h1 small { display:block; font-size:10px; letter-spacing:.18em; color:#a5c8b6; margin-bottom:9px; font-weight:500; }
+  .fold { border-color:#426458; color:#bbd2c6; width:29px; height:29px; }
+  .intro { color:#b3ccbf; font-size:12px; margin:20px 0 30px; }
+  legend { font-size:12px; margin-bottom:12px; }
+  legend small { color:#b3ccbf; }
+  .setup fieldset { margin-bottom:26px; }
+  .setup .chip { border:0; padding:5px 9px; border-radius:5px; }
+  .setup .chip.own { background:#d7efdf; color:#174b35; }
+  .setup .chip.rival { background:#345b4d; color:#e1eee5; }
+  .setup input, .setup select { background:#234c3e; color:#fff; border-color:#496a5c; border-radius:8px; padding:11px 12px; }
+  .setup input::placeholder { color:#bbcdc1; font-weight:400; }
+  .setup .remove { border-color:#496a5c; color:#c6d8cd; }
+  .setup .store + .store { border-color:#496a5c; }
+  .setup .add { border-color:#678677; color:#d6e6db; font-size:12px; padding:11px; border-radius:8px; }
+  .setup .opts summary, .setup .opts-body label { color:#bfd3c6; }
+  .go { background:#c7ed90; color:#183c26; font-size:14px; letter-spacing:.03em; border-radius:9px; box-shadow:0 4px 14px #062a2440; }
+  .go:hover { background:#d8f4af; filter:none; }
+  .fine { color:#a8c2b3; font-size:11px; }
+  .setup .form-msg { color:#ffd3c9; }
+  .collapsed .rail { color:#d6e6db; }
+  .collapsed .rail:hover { background:#234c3e; }
+  .board { padding:32px 38px 56px; }
+  .workspace-head { display:flex; align-items:center; justify-content:space-between; gap:16px; padding-bottom:25px; margin-bottom:30px; border-bottom:1px solid var(--line); }
+  .eyebrow { margin:0 0 7px; font-size:10px; font-weight:700; letter-spacing:.17em; color:var(--plate); }
+  .workspace-head h2 { font-size:24px; margin:0; letter-spacing:.02em; }
+  .workspace-head p:last-child { margin:5px 0 0; color:var(--ink-3); font-size:12px; }
+  .workspace-badge { display:flex; align-items:center; gap:7px; border:1px solid var(--line); border-radius:30px; padding:7px 12px; color:var(--ink-2); background:var(--panel); white-space:nowrap; font-size:11px; }
+  .workspace-badge i { width:6px; height:6px; background:#39936b; border-radius:50%; }
+  .empty { max-width:1080px; margin:0 auto; }
+  .welcome { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:32px; background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:38px; box-shadow:0 8px 30px #183c2905; }
+  .empty h2 { font-size:clamp(23px,2.4vw,34px); line-height:1.5; letter-spacing:.01em; margin:12px 0 16px; }
+  .empty p { font-size:13px; line-height:1.9; }
+  .welcome-tag { display:inline-flex; align-items:center; gap:6px; background:#edf5ef; color:#30744e; padding:4px 10px; border-radius:5px; font-size:10px; font-weight:700; letter-spacing:.08em; }
+  .welcome-foot { margin-top:23px!important; color:var(--plate); font-weight:700; font-size:12px!important; }
+  .demo-card { background:#f6f9f6; border:1px solid #e4ebe4; border-radius:13px; padding:20px 18px 12px; transform:rotate(-1deg); }
+  .demo-caption { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:11px; font-weight:700; }
+  .demo-caption span { color:var(--ink-3); font-size:9px; font-weight:400; border:1px solid var(--line); padding:2px 6px; border-radius:4px; }
+  .quad-demo { height:230px; margin-top:20px; }
+  .quad-demo .plot { border-color:#a2b8aa; border-radius:6px 6px 0 0; background:radial-gradient(ellipse 24% 30% at 30% 68%,#37976799,transparent 80%),radial-gradient(ellipse 30% 28% at 70% 35%,#176c4bc9,transparent 80%),radial-gradient(ellipse 25% 25% at 63% 67%,#a2d782ab,transparent 85%),repeating-linear-gradient(0deg,transparent,transparent 39px,#e5ece5 40px),#fff; }
+  .quad-demo .plot::before, .quad-demo .plot::after { border-color:#afc0b3; }
+  .quad-demo .q { font-size:9px; background:#ffffffbf; padding:3px 5px; border-radius:3px; }
+  .demo-note { text-align:right; font-size:10px!important; color:var(--ink-3); margin:10px 0 0!important; }
+  .quick-start { margin-top:28px; }
+  .quick-start h3 { font-size:13px; margin:0 0 14px; }
+  .steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+  .step { border:1px solid var(--line); border-radius:12px; padding:20px; background:#ffffff80; }
+  .step-number { display:inline-grid; place-items:center; width:27px; height:27px; background:#e5eee7; color:#34724d; border-radius:8px; font-size:11px; font-weight:700; margin-bottom:13px; }
+  .step h4 { margin:0 0 6px; font-size:13px; color:var(--ink); }
+  .step p { font-size:12px; margin:0; }
+  .toolbar { background:var(--panel); border:1px solid var(--line); border-radius:13px; padding:18px; margin-bottom:24px; }
+  .split-row { background:var(--field); border:0; padding:13px; }
+  .panel, .compare { border-radius:14px; box-shadow:0 4px 16px #183c2904; padding:20px; }
+  .plate { border-width:1px; border-radius:7px; }
+  .own .plate { box-shadow:none; }
+  .stats { background:var(--field); padding:14px; border-radius:9px; margin:16px 0 12px; gap:22px; }
+  th,td { padding:10px 8px; }
+  tbody tr:hover { background:var(--field); }
+  button, input, select { transition:background-color .15s,border-color .15s; }
+  @media (min-width:1500px) { .board { padding-left:56px; padding-right:56px; } }
+  @media (max-width:1150px) { .welcome { padding:26px; gap:22px; } .board { padding:26px; } .steps { gap:10px; } .step { padding:16px; } }
+  @media (max-width:900px) {
+    .app,.app.collapsed { grid-template-columns:1fr; }
+    .setup-body { width:auto; padding:24px; }
+    .setup { height:auto; position:static; }
+    .board { padding:24px 18px 40px; }
+    .workspace-head { margin-bottom:22px; }
+    .empty { margin-top:0; }
+    .intro { margin-bottom:22px; }
+  }
+  @media (max-width:600px) {
+    .welcome { grid-template-columns:1fr; padding:24px; gap:24px; }
+    .steps { grid-template-columns:1fr; }
+    .step { display:grid; grid-template-columns:28px 1fr; column-gap:12px; }
+    .step-number { grid-row:1 / 3; margin:0; }
+    .step p { grid-column:2; }
+    .workspace-badge { display:none; }
+    .workspace-head h2 { font-size:22px; }
+    .demo-card { transform:none; }
+    .quad-demo { height:210px; }
+    .tool-row { gap:12px; }
+    .split-row .ctl { flex-wrap:wrap; }
+  }
+  @media (prefers-reduced-motion:reduce) { button,input,select { transition:none; } }
+
 </style>
 </head>
 <body>
@@ -289,14 +387,14 @@
 
     <div class="setup-body" id="setup-body">
       <div class="brand">
-        <h1>在庫ヒートマップ比較</h1>
+        <h1><small>INVENTORY INSIGHT</small>在庫ヒートマップ</h1>
         <button type="button" class="fold" id="fold" aria-label="入力欄をたたむ" aria-controls="setup-body" aria-expanded="true" title="入力欄をたたむ">‹</button>
       </div>
-      <p class="intro">未使用車専門店の在庫一覧ページを読み込み、価格と年式（または走行距離）の四象限で店舗ごとの在庫の集まり方を比べ、未使用車・チョイ乗り車・中古車の台数も集計します。</p>
+      <p class="intro">在庫の違いを、次の戦略に。<br>比較したい店舗の情報を入力してください。</p>
 
       <form id="form" novalidate>
         <fieldset>
-          <legend><span class="chip own">自社</span></legend>
+          <legend><span class="chip own">自社</span><span>基準にする店舗</span></legend>
           <div class="store own">
             <input type="text" class="name" id="own-name" placeholder="社名" aria-label="自社の社名" autocomplete="off">
             <input type="url" class="url" id="own-url" placeholder="在庫一覧ページのURL" aria-label="自社の在庫一覧URL" autocomplete="off">
@@ -328,7 +426,7 @@
           </div>
         </details>
 
-        <button type="submit" class="go" id="go">比較する</button>
+        <button type="submit" class="go" id="go">在庫を比較する　→</button>
         <p class="form-msg" id="form-msg" role="alert"></p>
         <p class="fine">各サイトの利用規約を確認のうえ、必要な範囲で使ってください。ページ数が多いと読み込みに時間がかかります。</p>
       </form>
@@ -336,6 +434,10 @@
   </aside>
 
   <main class="board">
+    <header class="workspace-head">
+      <div><p class="eyebrow">INVENTORY ANALYTICS</p><h2>在庫比較ワークスペース</h2><p>価格・年式・走行距離から、店舗ごとの強みを見つける。</p></div>
+      <span class="workspace-badge" id="workspace-status"><i aria-hidden="true"></i>店舗別の比較分析</span>
+    </header>
     <div class="toolbar" id="toolbar" hidden>
       <div class="tool-row">
         <div class="ctl">横軸
@@ -378,10 +480,17 @@
     </div>
 
     <div class="empty" id="empty">
-      <h2>店舗ごとの在庫の集まり方を、四象限で並べて見る</h2>
-      <p>左に自社と他社の社名・在庫一覧URLを入れて「比較する」を押すと、店舗ごとの四象限グラフがここに並びます。</p>
-      <p>縦が価格、横が年式（または走行距離）。点線で「高い／安い」「古い／新しい」の4つに分け、それぞれに何台・何％あるかを表示します。色が濃いところほど在庫が集まっています。</p>
-      <p>あわせて、走行距離で「未使用車（100km未満）」「チョイ乗り車（100km以上10,000km未満）」「中古車（10,000km以上）」に分けた台数を店舗ごとに集計します。</p>
+      <div class="welcome">
+        <div class="welcome-copy">
+          <span class="welcome-tag">在庫を、ひと目で。</span>
+          <h2>店舗の違いが見える。<br>次の一手が見つかる。</h2>
+          <p>自社と他社の在庫を、同じものさしで比較。<br>価格と年式の分布から、品揃えの特徴や<br>競合とのポジションを読み解きます。</p>
+          <p class="welcome-foot">店舗とURLを入力して、比較をはじめましょう →</p>
+          <button type="button" id="try-demo" class="go" style="width:auto;margin-top:12px;padding:12px 20px">サンプルで試す →</button>
+          <p style="font-size:11px;margin-top:8px">架空の3店舗のデータで、操作を体験できます。</p>
+        </div>
+        <div class="demo-card">
+          <div class="demo-caption">価格 × 年式の在庫分布<span>グラフの見本</span></div>
       <div class="quad-demo" aria-hidden="true">
         <span class="y">価格（上ほど高い）</span>
         <div class="plot">
@@ -391,6 +500,17 @@
           <span class="q" style="right:6px;bottom:4px">安い・新しい</span>
         </div>
         <span class="x">古い ← 年式 → 新しい</span>
+      </div>
+          <p class="demo-note">色が濃いエリアほど、在庫が集中しています</p>
+        </div>
+      </div>
+      <div class="quick-start">
+        <h3>3ステップで、在庫の特徴をつかむ</h3>
+        <div class="steps">
+          <article class="step"><span class="step-number">01</span><h4>店舗を登録</h4><p>自社と比較したい店舗の<br>在庫一覧URLを入力します。</p></article>
+          <article class="step"><span class="step-number">02</span><h4>分布を比較</h4><p>価格と年式・走行距離で<br>在庫の集まり方を並べて確認。</p></article>
+          <article class="step"><span class="step-number">03</span><h4>品揃えを読み解く</h4><p>四象限の構成比や車両区分で<br>それぞれの強みを把握します。</p></article>
+        </div>
       </div>
     </div>
 
@@ -516,7 +636,9 @@ $("#form").addEventListener("submit", async e => {
   if (!entries.length) { msg.textContent = "比べるURLを1つ以上入れてください。"; return; }
   const bad = entries.find(x => !validUrl(x.url));
   if (bad) { msg.textContent = `URLの形式が正しくありません：${bad.url}`; return; }
+  if (location.protocol === "file:") { msg.textContent = "体験版ではサンプルデータでお試しください。実店舗の取得にはPythonアプリの起動が必要です。"; return; }
   saveInputs();
+  $("#workspace-status").textContent = "店舗別の比較分析";
 
   const run = ++runId;
   stores = entries.map((x, i) => ({ ...x, key: i, name: x.name || hostOf(x.url), status: "loading" }));
@@ -529,7 +651,7 @@ $("#form").addEventListener("submit", async e => {
   const go = $("#go");
   go.disabled = true; go.textContent = "読み込み中…";
   await Promise.allSettled(stores.map(s => load(s, run)));
-  if (run === runId) { go.disabled = false; go.textContent = "比較する"; }
+  if (run === runId) { go.disabled = false; go.textContent = "在庫を比較する　→"; }
 });
 
 async function load(s, run) {
@@ -914,6 +1036,47 @@ onSplit($("#sp-price"), "price"); onSplit($("#sp-year"), "year"); onSplit($("#sp
 $("#sp-reset").addEventListener("click", () => { view.split = { price: null, year: null, km: null }; renderAll(); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => stores.length && renderAll());
 $("#panels").addEventListener("scroll", e => e.currentTarget.classList.toggle("scrolled", e.currentTarget.scrollLeft > 4));
+
+
+function startDemo() {
+  if (typeof Plotly === "undefined") {
+    $("#form-msg").textContent = "グラフライブラリを読み込めませんでした。通信環境を確認してください。";
+    return;
+  }
+  ++runId; // Ignore responses from a previous live request.
+  $("#go").disabled = false;
+  $("#go").textContent = "在庫を比較する　→";
+  $("#form-msg").textContent = "";
+  const names = ["自社サンプル店", "駅前サンプル店", "郊外サンプル店"];
+  stores = names.map((name, shop) => ({
+    key: "demo-" + shop, role: shop === 0 ? "own" : "rival", name,
+    url: "https://example.com/",
+    status: "done",
+    data: {
+      pages: 1, warnings: ["サンプルデータ：架空の在庫です。実店舗の情報ではありません。"],
+      vehicles: Array.from({length: 48 + shop * 12}, (_, i) => ({
+        price: Math.round((85 + shop * 30 + (i * 37 % 170) + Math.sin(i) * 20) * 10) / 10,
+        year: 2019 + (i * 3 + Math.floor(i / 4) + shop) % 8,
+        mileage: [5, 20, 50, 80, 350, 1200, 4500, 9000, 18000, 42000][(i + shop * 3) % 10],
+        maker: ["トヨタ", "ホンダ", "スズキ"][i % 3],
+        text: ["トヨタ ヤリス", "ホンダ N-BOX", "スズキ ハスラー"][i % 3] + "（架空のサンプル車両）"
+      }))
+    }
+  }));
+  view.split = {price:null, year:null, km:null};
+  $("#workspace-status").textContent = "サンプル表示中・架空のデータ";
+  $("#empty").hidden = true;
+  $("#toolbar").hidden = false;
+  buildPanels();
+  for (const store of stores) {
+    const source = store.el.querySelector(".src");
+    source.removeAttribute("href");
+    source.textContent = "サンプル";
+    source.removeAttribute("target");
+  }
+  renderAll();
+}
+$("#try-demo").addEventListener("click", startDemo);
 
 loadInputs();
 </script>
