@@ -74,6 +74,9 @@ class WebTests(unittest.TestCase):
         for route, status in (
             ("/api/analyze", 422),
             ("/api/analyze?url=http://127.0.0.1/", 400),
+            ("/api/analyze?url=http://127.0.0.1/&max_pages=500", 400),
+            ("/api/analyze?url=http://127.0.0.1/&max_pages=501", 422),
+            ("/api/analyze-page?url=http://127.0.0.1/", 400),
             ("/api/analyze?url=https://example.com&max_pages=0", 422),
             ("/api/analyze?url=https://example.com&basis=invalid", 422),
         ):
@@ -100,6 +103,13 @@ class AnalyzeTests(unittest.TestCase):
                 self.assertEqual(error.exception.status_code, status)
         with patch.object(main, "scrape", return_value={"vehicles": []}):
             self.assertEqual(self.call(), {"vehicles": []})
+
+    def test_single_page_endpoint(self):
+        data = {"vehicles": [], "pages": 1, "warnings": ["1ページで打ち切りました（次ページが残っています）。"], "next_url": "https://example.com/?page=2"}
+        with patch.object(main, "scrape", return_value=data):
+            result = main.analyze_page("https://example.com/", basis="auto")
+        self.assertEqual(result["warnings"], [])
+        self.assertEqual(result["next_url"], "https://example.com/?page=2")
 
     def test_busy_response(self):
         main.SCRAPE_SLOTS.acquire()
