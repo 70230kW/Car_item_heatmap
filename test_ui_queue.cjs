@@ -112,6 +112,59 @@ const sleep = ms => new Promise(resolve=>setTimeout(resolve,ms));
       await page.close();
       console.log('PASS: sample selection cancels retries and queue');
     }
+
+    // Exercise all 500 page requests without waiting 499 seconds in this mock test.
+    {
+      const {page,errors}=await setup(1);
+      await page.click('details.opts summary');
+      await page.selectOption('#pages','500');
+      await page.evaluate(()=>{ waitForRetry = async (_ms, signal) => { if(signal.aborted) throw new DOMException('Aborted','AbortError'); }; });
+      let calls=0;
+      await page.route('**/api/analyze-page?**', async route=>{
+        calls++;
+        await route.fulfill({json:{
+          vehicles:[{...data.vehicles[0],id:'AU'+calls}],
+          pages:1,warnings:[],
+          next_url:calls<500 ? 'https://example.com/stock/?PN='+(calls+1) : null
+        }});
+      });
+      await page.click('#go');
+      await page.waitForFunction(()=>!document.querySelector('#go').disabled,{},{timeout:120000});
+      assert.equal(calls,500);
+      assert.equal(await page.evaluate(()=>stores[0].data.pages),500);
+      assert.equal(await page.evaluate(()=>stores[0].data.vehicles.length),500);
+      assert.equal(await page.locator('.failed').count(),0);
+      assert.deepEqual(errors,[]);
+      await page.close();
+      console.log('PASS: 500 incremental pages, 500 distinct IDs retained');
+    }
+
+    // A failed later page must leave the successful pages visible.
+    {
+      const {page,errors}=await setup(1);
+      await page.click('details.opts summary');
+      await page.selectOption('#pages','500');
+      await page.evaluate(()=>{ waitForRetry = async ()=>{}; });
+      let calls=0;
+      await page.route('**/api/analyze-page?**',async route=>{
+        calls++;
+        if(calls===3) await route.fulfill({status:502,json:{detail:'upstream unavailable'}});
+        else await route.fulfill({json:{
+          vehicles:[{...data.vehicles[0],id:'AU'+calls}],pages:1,warnings:[],
+          next_url:'https://example.com/stock/?PN='+(calls+1)
+        }});
+      });
+      await page.click('#go');
+      await page.waitForFunction(()=>!document.querySelector('#go').disabled);
+      assert.equal(calls,3);
+      assert.equal(await page.evaluate(()=>stores[0].data.pages),2);
+      assert.equal(await page.evaluate(()=>stores[0].data.vehicles.length),2);
+      assert((await page.locator('.notes').innerText()).includes('2ページ分の結果を保持'));
+      assert.equal(await page.locator('.failed').count(),0);
+      assert.deepEqual(errors,[]);
+      await page.close();
+      console.log('PASS: failure on page three retains first two pages');
+    }
   } finally {
     await browser.close();
   }

@@ -208,6 +208,20 @@ def parse_cards(html: str) -> list[str]:
     soup = BeautifulSoup(html, "html.parser")
     for t in soup(["script", "style", "noscript", "head", "nav", "footer", "header", "select", "option"]):
         t.decompose()
+    # Carsensor's repeated outer cards contain multiple independent price/spec blocks.
+    # Take the whole vehicle card before applying the generic price heuristic.
+    carsensor = soup.select(".cassetteMain")
+    if carsensor:
+        cards = []
+        for card in carsensor:
+            text = _clean(card.get_text(" "))
+            detail = card.select_one('a[href*="/usedcar/detail/"]')
+            match = re.search(r"/usedcar/detail/([A-Za-z0-9]+)", detail.get("href", "")) if detail else None
+            if match:
+                text = f"車両ID {match.group(1)} " + text
+            if _PRICE_ANY.search(text):
+                cards.append(text)
+        return cards
     order = {id(el): i for i, el in enumerate(soup.find_all(True))}
     anchors = _price_anchors(soup)
     if not anchors:
@@ -380,7 +394,10 @@ def _page_of(url: str) -> int | None:
         if k.lower() in _PAGE_KEYS and v.isdigit():
             return int(v)
     m = re.search(r"/(?:page/|p)(\d+)/?$", u.path)
-    return int(m.group(1)) if m else None
+    if m:
+        return int(m.group(1))
+    m = re.search(r"/index(\d*)\.html?$", u.path)
+    return int(m.group(1) or 1) if m else None
 
 
 def bump_page(url: str) -> str | None:
@@ -394,6 +411,10 @@ def bump_page(url: str) -> str | None:
     m = re.search(r"(/(?:page/|p))(\d+)(/?)$", u.path)
     if m:
         path = u.path[:m.start()] + m.group(1) + str(int(m.group(2)) + 1) + m.group(3)
+        return urlunparse(u._replace(path=path))
+    m = re.search(r"/index(\d*)\.(html?)$", u.path)
+    if m:
+        path = u.path[:m.start()] + f"/index{int(m.group(1) or 1) + 1}.{m.group(2)}"
         return urlunparse(u._replace(path=path))
     return None
 
@@ -471,7 +492,8 @@ def scrape(url: str, max_pages: int = 5, basis: str = "auto", delay: float = 1.0
         visited.add(_norm(final))
         added = 0
         for text in parse_cards(html):
-            key = text[:200]
+            vehicle_id = re.match(r"車両ID ([A-Za-z0-9]+) ", text)
+            key = vehicle_id.group(1) if vehicle_id else text
             if key in seen:
                 continue
             seen.add(key)
@@ -479,6 +501,7 @@ def scrape(url: str, max_pages: int = 5, basis: str = "auto", delay: float = 1.0
             if price is None or price <= 0:
                 continue
             vehicles.append({"price": price, "maker": detect_maker(text), "body": detect_body(text),
+                             "id": vehicle_id.group(1) if vehicle_id else None,
                              "year": detect_year(text), "mileage": detect_mileage(text), "text": text[:200]})
             added += 1
         if added == 0 and pages > 1:
@@ -494,6 +517,6 @@ def scrape(url: str, max_pages: int = 5, basis: str = "auto", delay: float = 1.0
         warnings.append("次ページのリンクを検出できなかったため、1ページ分のみ集計しています（ページ送りがJavaScript/POSTの場合は未対応）。")
     if cur and pages >= max_pages:
         warnings.append(f"{max_pages}ページで打ち切りました（次ページが残っています）。")
-    return {"vehicles": vehicles, "pages": pages, "warnings": warnings}
+    return {"vehicles": vehicles, "pages": pages, "warnings": warnings, "next_url": cur}
 
 

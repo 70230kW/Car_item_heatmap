@@ -29,7 +29,7 @@ def index():
 @app.get("/api/analyze")
 def analyze(
     url: str,
-    max_pages: int = Query(5, ge=1, le=50),
+    max_pages: int = Query(5, ge=1, le=500),
     basis: str = Query("auto", pattern="^(auto|body|total)$"),
 ):
     """在庫一覧URLを取得し、車両ごとの価格・メーカー・ボディタイプを返す。
@@ -44,3 +44,16 @@ def analyze(
         raise HTTPException(502, f"ページを取得できませんでした: {e}")
     finally:
         SCRAPE_SLOTS.release()
+
+
+@app.get("/api/analyze-page")
+def analyze_page(
+    url: str,
+    basis: str = Query("auto", pattern="^(auto|body|total)$"),
+):
+    """One bounded request per page, so large scans do not hold one HTTP request open."""
+    result = analyze(url, max_pages=1, basis=basis)
+    # The client owns the overall page limit in this mode.
+    result["warnings"] = [w.replace("1ページ分のみ集計しています", "このページまでを集計しています") for w in result["warnings"]
+                          if w != "1ページで打ち切りました（次ページが残っています）。"]
+    return result
