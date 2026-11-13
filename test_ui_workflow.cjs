@@ -1,0 +1,68 @@
+const {chromium}=require('playwright');
+const assert=require('node:assert/strict');
+(async()=>{
+ const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.CHROMIUM_EXECUTABLE_PATH,args:['--no-sandbox','--disable-dev-shm-usage']}:{})});
+ try{
+  const page=await browser.newPage({viewport:{width:1440,height:1000}});
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const base=process.env.BASE_URL || 'http://127.0.0.1:8001';
+  await page.goto(base);
+  await page.click('#fold');
+  await page.click('#setup-from-empty');
+  assert(await page.locator('#setup-body').isVisible());
+  assert.equal(await page.evaluate(()=>document.activeElement.id),'own-name');
+  await page.waitForTimeout(300);
+  await page.click('#go');
+  assert.equal(await page.locator('#own-url').getAttribute('aria-invalid'),'true');
+  assert((await page.locator('.field-error').innerText()).includes('URL'));
+  await page.fill('#own-url','https://example.com/');
+  assert.equal(await page.locator('.field-error').count(),0);
+  await page.fill('#own-url','');
+  await page.screenshot({path:'/workspace/artifacts/workspace-modern-start.png' ,fullPage:true});
+  await page.click('#try-demo');
+  assert(!await page.locator('#display-options').evaluate(e=>e.open));
+  await page.locator('#display-options summary').click();
+  await page.fill('#sp-price','180');await page.locator('#sp-price').press('Tab');
+  assert((await page.locator('#auto-tag').innerText()).includes('手入力'));
+  await page.click('#sp-reset');
+  await page.locator('#display-options summary').click();
+  await page.click('#overlay-toggle');
+  await page.screenshot({path:'/workspace/artifacts/workspace-modern-overlay.png',fullPage:true});
+  await page.setViewportSize({width:390,height:844});
+  await page.waitForFunction(()=>{const chart=document.querySelector('#overlay-panel .chart');return Math.abs(chart._fullLayout.width-chart.clientWidth)<2});
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+  await page.screenshot({path:'/workspace/artifacts/workspace-modern-mobile.png',fullPage:true});
+  await page.close();
+
+  const run=await browser.newPage({viewport:{width:1440,height:1000}});
+  run.on('pageerror',e=>errors.push(e.message));
+  await run.goto(base);
+  await run.fill('#own-url','https://example.com/own');
+  await run.locator('#rivals .url').first().fill('https://example.com/rival-1');
+  await run.click('#add');await run.locator('#rivals .url').last().fill('https://example.com/rival-2');
+  await run.locator('.opts summary').click();await run.selectOption('#pages','500');
+  let calls=0, retry=false;
+  const data={vehicles:[{price:150,year:2024,mileage:20,text:'中止テスト'}],pages:1,warnings:[]};
+  await run.route('**/api/analyze-page?**',route=>{
+   calls++;
+   return route.fulfill({json:{...data,next_url:retry?null:'https://example.com/next'}});
+  });
+  await run.click('#go');
+  await run.waitForFunction(()=>stores.filter(s=>s.data?.pages===1).length===2);
+  await run.click('#stop-loading');
+  const stopped=calls;
+  await run.waitForTimeout(1100);
+  assert.equal(calls,stopped,'requests continued after stop');
+  assert.equal(await run.evaluate(()=>stores.filter(s=>s.data?.pages===1).length),2);
+  assert(await run.locator('#go').isEnabled());
+  assert((await run.locator('#run-summary').innerText()).includes('中止'));
+  retry=true;
+  await run.locator('#panels .retry-store').click();
+  await run.waitForFunction(()=>stores.every(s=>s.status==='done'));
+  assert.equal(calls,stopped+1,'retry fetched unrelated stores');
+  assert(await run.locator('#go').isEnabled());
+  assert.deepEqual(errors,[]);
+  await run.close();
+  console.log('PASS: edit inputs, progressive display settings, overlay/mobile layouts, cancel keeps partial data and stops queue, retry only one store');
+ }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exit(1)});

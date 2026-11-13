@@ -486,6 +486,156 @@
     .split-row .ctl { flex-wrap:wrap; }
   }
   @media (prefers-reduced-motion:reduce) { button,input,select { transition:none; } }
+  .field-error { grid-column:1 / -1; color:var(--err-ink); font-size:12px; line-height:1.7; }
+  .setup input[aria-invalid="true"],.setup input[aria-invalid="true"]:focus { border-color:var(--err-ink); }
+  /* Workspace polish: neutral surfaces, restrained aurora, clear action hierarchy. */
+  :root { --ink:#edf0f8; --ink-2:#c1c9da; --ink-3:#99a6bc; --line:#333e54; --panel:#1a2232; --field:#202a3c; --plate:#c8c0ff; }
+  html { scroll-padding-top:96px; }
+  body { font-size:14px; letter-spacing:.01em; background:radial-gradient(ellipse at 75% 0%,#65518c30,transparent 50%),radial-gradient(ellipse at 100% 65%,#21757724,transparent 55%),#10151f; background-attachment:fixed; }
+  .app { grid-template-columns:320px minmax(0,1fr); }
+  .app.collapsed { grid-template-columns:60px minmax(0,1fr); }
+  .setup { background:#151c29f5; border-right-color:#35405880; scrollbar-width:thin; scrollbar-color:#48536b transparent; }
+  .setup-body { width:320px; padding:24px; }
+  .brand { margin-bottom:20px; }
+  .brand h1 { font-size:20px; letter-spacing:-.02em; }
+  .app-icon { width:34px; height:34px; }
+  .intro { margin:0 0 20px; font-size:12px; line-height:1.75; }
+  .setup-section-title { margin:24px 0 16px; color:var(--ink-3); font-size:11px; letter-spacing:.08em; font-weight:600; }
+  .setup fieldset { margin-bottom:24px; }
+  .setup legend { font-size:12px; gap:8px; }
+  .setup input,.setup select { background:#1e2839; border:1px solid #3c4860; border-radius:9px; padding:11px 12px; min-height:42px; }
+  .setup input:hover,.setup select:hover { background:#232e42; }
+  .setup input:focus,.setup select:focus { padding-bottom:11px; border:1px solid var(--plate); }
+  .setup .store { gap:8px; }
+  .saved-controls { margin-bottom:2px; gap:6px; }
+  .setup .saved-picker { min-height:36px; padding:7px 8px; background:transparent; color:var(--ink-2); font-size:11px; }
+  .save-store { min-height:36px; border-radius:8px; padding:6px 12px; background:#c8c0ff0a; }
+  .saved-stores,.google-sheets { background:transparent; padding:12px; border-color:#35415a; border-radius:10px; }
+  .saved-stores summary,.google-sheets summary { min-height:24px; line-height:24px; }
+  .saved-stores summary::marker,.google-sheets summary::marker,.display-options summary::marker,.quick-start summary::marker { color:#9fadd1; }
+  .setup .add { border-style:solid; border-color:#47536c; color:var(--ink-2); border-radius:9px; min-height:42px; }
+  .go { border-radius:11px; min-height:46px; box-shadow:0 3px 10px #00000026; letter-spacing:0; }
+  .fine { font-size:11px; line-height:1.8; color:var(--ink-3); }
+  .setup .opts { padding:12px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); margin-bottom:18px; }
+  .opts p { font-size:11px; line-height:1.7; color:var(--ink-3); margin-bottom:0; }
+  .board { padding:0 32px 48px; }
+  .workspace-head { position:sticky; top:0; z-index:5; margin:0 -32px 26px; padding:24px 32px 20px; background:#121a28ed; backdrop-filter:blur(16px); border-bottom:1px solid #35415a70; min-height:100px; }
+  .workspace-head h2 { font-size:24px; font-weight:700; letter-spacing:-.03em; }
+  .workspace-title { min-width:0; }
+  .workspace-head p { color:var(--ink-3); line-height:1.6; font-size:12px; }
+  .workspace-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:10px; }
+  .workspace-badge { font-size:10px; padding:6px 10px; background:#212a3e; border-color:#3a455f; }
+  .edit-stores { border:1px solid #536078; border-radius:9px; min-height:40px; padding:8px 14px; background:#252f43; color:var(--ink); font-size:12px; cursor:pointer; white-space:nowrap; }
+  .toolbar { border-radius:14px; padding:20px; gap:18px; background:#1b2333f5; border-color:#35415a; box-shadow:0 4px 20px #00000015; margin-bottom:24px; backdrop-filter:none; }
+  .toolbar-heading { display:flex; align-items:center; gap:12px; font-size:11px; color:var(--ink-3); }
+  .toolbar-heading>span:first-child { color:var(--ink-2); font-weight:700; }
+  #layout-description { margin-right:auto; }
+  .tool-row { gap:14px 22px; }
+  .comparison-modes { gap:8px; }
+  .layout-toggle { min-height:40px; border-radius:9px; padding:8px 14px; background:#232e41; border:1px solid #4d5974; font-size:12px; font-weight:500; color:var(--ink-2); }
+  .layout-toggle[aria-pressed="true"] { background:#494269; color:#f0ecff; border-color:#8c80bd; }
+  .ctl { flex-wrap:wrap; gap:8px; font-size:12px; }
+  .seg { border-color:#495570; border-radius:8px; background:#151d2b; }
+  .seg label { font-size:12px; padding:7px 12px; min-height:38px; }
+  .seg input:checked+label { background:#424761; color:#f0edff; }
+  input[type=range] { width:110px; }
+  .legend-row { display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; padding-top:14px; border-top:1px solid #35415a; }
+  .category-color-legend { gap:8px 14px; font-size:11px; }
+  .legend { font-size:10px; gap:6px; }
+  .legend .bar { width:72px; height:6px; }
+  #lg-note { max-width:230px; }
+  .display-options { border-top:1px solid #35415a; padding-top:13px; font-size:12px; color:var(--ink-2); }
+  .display-options summary { cursor:pointer; width:fit-content; min-height:24px; }
+  .split-row { margin-top:12px; padding:16px; background:#151d2c; border-radius:9px; gap:12px 18px; }
+  .split-row>strong { display:none; }
+  .split-row .ctl { gap:6px; }
+  .split-row .ctl input { width:88px; min-height:36px; }
+  .welcome { padding:30px; border-radius:16px; border-color:#3b465d; background:#1b2333eb; box-shadow:0 8px 30px #00000014; }
+  .empty h2 { font-size:23px; letter-spacing:-.02em; margin-bottom:16px; }
+  .welcome-copy p { font-size:13px; line-height:1.9; color:var(--ink-2); }
+  .welcome-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:22px; }
+  .welcome-actions .go { width:auto; padding:10px 18px; }
+  .welcome-actions .layout-toggle { min-height:46px; }
+  .demo-card { background:#141c2b; border-color:#35415b; padding:18px; border-radius:12px; }
+  .quad-demo { height:190px; }
+  .quad-demo .plot { background:radial-gradient(ellipse 24% 30% at 30% 68%,var(--cat-used),transparent 80%),radial-gradient(ellipse 30% 28% at 70% 35%,var(--cat-new),transparent 80%),radial-gradient(ellipse 25% 25% at 63% 67%,var(--cat-short),transparent 85%),repeating-linear-gradient(0deg,transparent,transparent 39px,#29334a 40px),#171d2c; }
+  .quick-start { margin-top:20px; font-size:12px; color:var(--ink-2); }
+  .quick-start summary { cursor:pointer; padding:8px 0; width:fit-content; }
+  .steps { margin-top:12px; gap:12px; }
+  .step { padding:18px; border-radius:12px; background:#1a2232; border-color:#35415a; box-shadow:none; backdrop-filter:none; }
+  .step-number { width:24px; height:24px; border-radius:6px; margin-bottom:10px; background:#32364e; }
+  .step h4 { font-size:12px; }
+  .step p { color:var(--ink-3); font-size:11px; }
+  .panel,.compare,.overlay-panel { border-radius:16px; background:#1b2333; border-color:#39455e; padding:22px; box-shadow:0 4px 20px #00000012; backdrop-filter:none; }
+  .panel.own { background:#202a3d; border-color:#8075a58c; }
+  .panels.scrolled .panel.own { box-shadow:12px 0 28px -8px #00000099; }
+  .panel-head { gap:12px; margin-bottom:16px; }
+  .plate,.own .plate { border:0; padding:0; background:transparent; color:var(--ink); box-shadow:none; border-radius:0; gap:10px; }
+  .plate-role { flex-shrink:0; font-size:10px; line-height:1.4; padding:4px 7px; border:0; background:#303c52; color:#c5cfe2; border-radius:5px; }
+  .own .plate-role { color:#e6dfff; background:#4c426c; }
+  .plate-name { font-size:18px; font-weight:700; margin:0; }
+  .src { font-size:11px; color:var(--ink-3); max-width:34%; }
+  .stats { flex-wrap:wrap; gap:12px 24px; padding:16px; background:#283348; border-radius:11px; margin:0 0 14px; }
+  .stats dt { font-size:10px; color:#b5c1d8; margin-bottom:4px; }
+  .stats dd { font-size:25px; font-weight:650; letter-spacing:-.025em; }
+  .stats dd small { font-size:11px; margin-left:4px; }
+  .catbar { height:7px; }
+  .catlist { gap:5px 12px; margin:9px 0 13px; font-size:10px; }
+  .catlist b { font-size:12px; }
+  .sw { width:8px; height:8px; border-radius:2px; }
+  .note { background:#363024; color:#f1d29c; border-left:2px solid #c49e58; padding:9px 12px; border-radius:6px; font-size:11px; }
+  .failed { padding:24px; gap:12px; line-height:1.8; }
+  .retry-store,.stop-loading { border:1px solid #68758e; border-radius:8px; min-height:36px; padding:7px 12px; background:#29354a; color:var(--ink); font-size:12px; cursor:pointer; width:fit-content; }
+  .stop-loading { color:#ffccd4; border-color:#865462; background:#442e3a; }
+  .retry-store:disabled { opacity:.5; cursor:default; }
+  .rows summary { min-height:36px; line-height:1.8; }
+  .company-list { gap:8px; margin-bottom:18px; }
+  .company-toggle { min-height:44px; border-radius:10px; background:#2a354b; border-color:#5a6782; padding:10px 12px; }
+  .company-state { padding:3px 6px; background:#151e2d; border-radius:5px; font-variant-numeric:tabular-nums; font-size:10px; }
+  .company-toggle[aria-pressed="false"] .company-state { background:#252a35; }
+  .compare h2,.overlay-panel h2 { font-size:17px; letter-spacing:-.01em; margin-bottom:8px; }
+  .compare p { line-height:1.8; }
+  .compare table { font-size:12px; }
+  .compare td,.compare th { padding:12px 10px; }
+  .compare td:first-child,.compare th:first-child { position:sticky; left:0; background:#1b2333; z-index:1; }
+  th { font-size:11px; }
+  .tablewrap,.compare-wrap { scrollbar-width:thin; scrollbar-color:#52617e transparent; }
+  @media (min-width:1500px) { .board { padding-left:40px; padding-right:40px; } .workspace-head { margin-left:-40px; margin-right:-40px; padding-left:40px; padding-right:40px; } }
+  @media (max-width:1150px) { .board { padding-left:24px; padding-right:24px; } .workspace-head { margin-left:-24px; margin-right:-24px; padding-left:24px; padding-right:24px; } .workspace-badge { display:none; } }
+  @media (max-width:900px) {
+    .app,.app.collapsed { grid-template-columns:1fr; }
+    .setup-body { width:auto; padding:22px; }
+    .setup { border-bottom:1px solid #35415a; }
+    .board { padding:0 18px 36px; }
+    .workspace-head { margin:0 -18px 20px; padding:18px; min-height:86px; }
+    .workspace-head h2 { font-size:21px; }
+    .workspace-actions { flex:none; }
+    .edit-stores { font-size:11px; padding:8px 10px; }
+    .toolbar { padding:16px; gap:15px; }
+    .welcome { padding:24px; }
+  }
+  @media (max-width:600px) {
+    .seg label,.edit-stores,.layout-toggle,.save-store { min-height:44px; }
+    .setup input,.setup select,.setup .saved-picker { min-height:44px; }
+    .workspace-head p { font-size:10px; max-width:210px; }
+    .workspace-head { gap:8px; }
+    .tool-row { gap:14px; }
+    .comparison-modes { gap:8px; }
+    .comparison-modes .layout-toggle { flex:1; min-width:130px; }
+    .toolbar-heading { flex-wrap:wrap; gap:6px; }
+    #layout-description { font-size:10px; }
+    .legend-row { gap:12px; }
+    .legend { margin-left:0; }
+    .category-color-legend { gap:8px 12px; }
+    .panel,.overlay-panel,.compare { padding:16px; }
+    .stats { padding:12px; gap:12px 18px; }
+    .plate-name { font-size:16px; }
+    .quad-demo { height:180px; }
+    .company-toggle { flex:1 1 100%; }
+    .company-name { flex:1; }
+    .steps { grid-template-columns:1fr; }
+    .sheet-grid { gap:8px; }
+  }
 </style>
 </head>
 <body>
@@ -509,32 +659,9 @@
         <p class="saved-help">このブラウザに保存します。各入力欄の一覧から呼び出せます。</p>
         <div id="saved-list"></div>
       </details>
-      <details class="google-sheets">
-        <summary>非公開Googleスプレッドシート</summary>
-        <p class="saved-help">Googleアカウントで読み取り専用接続します。シートを公開する必要はありません。</p>
-        <div class="google-actions"><a id="google-connect" class="save-store" href="/auth/google/login">Googleに接続</a><button id="google-logout" type="button" class="save-store" hidden>切断</button></div>
-        <p id="google-status" class="saved-help">接続状態を確認中…</p>
-        <label>スプレッドシートのURL<input type="url" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/…"></label>
-        <div class="sheet-grid"><label>見出しの行番号<input type="number" id="sheet-header" min="1" max="50" value="1"></label><label>シート<select id="sheet-tab" disabled><option value="">先頭のシート</option></select></label></div>
-        <button id="sheet-read" type="button" class="save-store" disabled>列とデータを読み込む</button>
-        <div id="sheet-mapping" hidden>
-          <p class="saved-help">列の対応と単位を確認してください。空欄・不正な価格の行は取り込みません。</p>
-          <div class="sheet-grid">
-            <label>価格（必須）<select id="map-price"></select></label><label>価格の単位<select id="sheet-price-unit"><option value="man">万円</option><option value="yen">円</option></select></label>
-            <label>年式<select id="map-year"></select></label><label>走行距離<select id="map-mileage"></select></label>
-            <label>走行距離の単位<select id="sheet-mileage-unit"><option value="km">km</option><option value="man_km">万km</option></select></label>
-            <label>車名<select id="map-name"></select></label><label>会社名の列<select id="map-company"></select></label>
-          </div>
-          <label>店舗名（会社名列のない場合）<input type="text" id="sheet-company" placeholder="店舗名"></label>
-          <label>取込先<select id="sheet-role"><option value="rival">他社（複数会社も可）</option><option value="own">自社（1社分）</option></select></label>
-          <p class="saved-help">自社として取り込むと、比較中の自社データを置き換えます。取り込んだデータは再読み込みすると消えます。</p>
-          <div id="sheet-preview" class="sheet-preview"></div>
-          <button id="sheet-import" type="button" class="save-store">グラフに追加する</button>
-        </div>
-        <p id="sheet-message" role="status" aria-live="polite" class="saved-help"></p>
-        <div id="imported-sheets"></div>
-      </details>
+
       <p id="saved-message" class="saved-message" role="status" aria-live="polite"></p>
+      <h2 class="setup-section-title">比較する店舗</h2>
       <form id="form" novalidate>
         <fieldset>
           <legend><span class="chip own">自社</span><span>基準にする店舗</span></legend>
@@ -574,16 +701,44 @@
         <p class="form-msg" id="form-msg" role="alert"></p>
         <p class="fine">各サイトの利用規約を確認のうえ、必要な範囲で使ってください。ページ数が多いと読み込みに時間がかかります。</p>
       </form>
+      <h2 class="setup-section-title">外部データ</h2>
+      <details class="google-sheets">
+        <summary>非公開Googleスプレッドシート</summary>
+        <p class="saved-help">Googleアカウントで読み取り専用接続します。シートを公開する必要はありません。</p>
+        <div class="google-actions"><a id="google-connect" class="save-store" href="/auth/google/login">Googleに接続</a><button id="google-logout" type="button" class="save-store" hidden>切断</button></div>
+        <p id="google-status" class="saved-help">接続状態を確認中…</p>
+        <label>スプレッドシートのURL<input type="url" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/…"></label>
+        <div class="sheet-grid"><label>見出しの行番号<input type="number" id="sheet-header" min="1" max="50" value="1"></label><label>シート<select id="sheet-tab" disabled><option value="">先頭のシート</option></select></label></div>
+        <button id="sheet-read" type="button" class="save-store" disabled>列とデータを読み込む</button>
+        <div id="sheet-mapping" hidden>
+          <p class="saved-help">列の対応と単位を確認してください。空欄・不正な価格の行は取り込みません。</p>
+          <div class="sheet-grid">
+            <label>価格（必須）<select id="map-price"></select></label><label>価格の単位<select id="sheet-price-unit"><option value="man">万円</option><option value="yen">円</option></select></label>
+            <label>年式<select id="map-year"></select></label><label>走行距離<select id="map-mileage"></select></label>
+            <label>走行距離の単位<select id="sheet-mileage-unit"><option value="km">km</option><option value="man_km">万km</option></select></label>
+            <label>車名<select id="map-name"></select></label><label>会社名の列<select id="map-company"></select></label>
+          </div>
+          <label>店舗名（会社名列のない場合）<input type="text" id="sheet-company" placeholder="店舗名"></label>
+          <label>取込先<select id="sheet-role"><option value="rival">他社（複数会社も可）</option><option value="own">自社（1社分）</option></select></label>
+          <p class="saved-help">自社として取り込むと、比較中の自社データを置き換えます。取り込んだデータは再読み込みすると消えます。</p>
+          <div id="sheet-preview" class="sheet-preview"></div>
+          <button id="sheet-import" type="button" class="save-store">グラフに追加する</button>
+        </div>
+        <p id="sheet-message" role="status" aria-live="polite" class="saved-help"></p>
+        <div id="imported-sheets"></div>
+      </details>
     </div>
   </aside>
 
-  <main class="board">
+  <main class="board" id="board">
     <header class="workspace-head">
-      <div><h2>在庫比較</h2><p>価格 × 年式・走行距離の分布と、車両区分別の台数を表示します。</p></div>
-      <span class="workspace-badge" id="workspace-status"><i aria-hidden="true"></i>店舗別の比較分析</span>
+      <div class="workspace-title"><h2>在庫比較</h2><p id="run-summary" role="status" aria-live="polite">店舗URL・Googleシートからデータを追加できます。</p></div>
+      <div class="workspace-actions"><span class="workspace-badge" id="workspace-status"><i aria-hidden="true"></i>店舗別の比較分析</span>
+        <button type="button" class="edit-stores" id="edit-stores" aria-controls="setup-body">店舗・データを編集</button></div>
     </header>
     <div class="toolbar" id="toolbar" hidden>
-      <div class="tool-row">
+      <div class="toolbar-heading"><span>比較方法</span><span id="layout-description">横スクロール・自社固定</span><button type="button" id="stop-loading" class="stop-loading" hidden>取得を中止</button></div>
+      <div class="tool-row comparison-modes">
         <button type="button" id="overlay-toggle" class="layout-toggle" aria-pressed="false" aria-controls="overlay-panel">重ねて比較する</button>
         <button type="button" id="fit-all" class="layout-toggle" aria-pressed="false" aria-controls="panels">1画面で比較する</button>
       </div>
@@ -614,6 +769,8 @@
           <input type="range" id="dot-size" min="3" max="18" step="1" value="7">
           <span id="dot-size-value">7px</span>
         </label>
+      </div>
+      <div class="legend-row">
         <div class="category-color-legend" aria-label="車両区分の色">
           <span><i class="sw c-new" aria-hidden="true"></i>未使用車</span>
           <span><i class="sw c-short" aria-hidden="true"></i>チョイ乗り車</span>
@@ -626,6 +783,8 @@
         </div>
       </div>
 
+      <details class="display-options" id="display-options">
+        <summary>四象限の境界を調整</summary>
       <div class="tool-row split-row">
         <strong>四象限の境界</strong>
         <label class="ctl">価格
@@ -640,6 +799,7 @@
         <span class="auto-tag" id="auto-tag"></span>
         <button type="button" class="reset" id="sp-reset">初期値に戻す</button>
       </div>
+      </details>
     </div>
 
     <div class="empty" id="empty">
@@ -648,7 +808,8 @@
           <h2>比較する店舗を設定</h2>
           <p>入力欄に店舗名と在庫一覧URLを設定し、<br>「在庫を比較する」を押してください。</p>
           <p>取得ページ数や価格の基準は、<br>「取得の設定」で変更できます。</p>
-          <button type="button" id="try-demo" class="go" style="width:auto;margin-top:12px;padding:12px 20px">サンプルデータを表示</button>
+          <div class="welcome-actions"><button type="button" id="setup-from-empty" class="go">店舗を入力する</button>
+          <button type="button" id="try-demo" class="layout-toggle">サンプルデータを表示</button></div>
           <p style="font-size:11px;margin-top:8px">サンプルは架空の3店舗・180台です。</p>
         </div>
         <div class="demo-card">
@@ -666,14 +827,14 @@
           <p class="demo-note">色が濃いエリアほど、在庫が集中しています</p>
         </div>
       </div>
-      <div class="quick-start">
-        <h3>操作手順</h3>
+      <details class="quick-start">
+        <summary>操作手順を確認</summary>
         <div class="steps">
           <article class="step"><span class="step-number">01</span><h4>店舗を登録</h4><p>自社と比較したい店舗の<br>在庫一覧URLを入力します。</p></article>
           <article class="step"><span class="step-number">02</span><h4>在庫を取得</h4><p>「在庫を比較する」を押します。<br>取得状況は店舗ごとに表示されます。</p></article>
           <article class="step"><span class="step-number">03</span><h4>表示を切り替える</h4><p>グラフ上部で横軸・構成比・<br>四象限の境界値を変更できます。</p></article>
         </div>
-      </div>
+      </details>
     </div>
 
     <section id="overlay-panel" class="overlay-panel" hidden aria-label="全社の重ね合わせ比較">
@@ -745,6 +906,15 @@ function setCollapsed(c, save = true, moveFocus = true) {
 }
 $("#fold").addEventListener("click", () => setCollapsed(true));
 $("#rail").addEventListener("click", () => setCollapsed(false));
+function openSetup() {
+  setCollapsed(false);
+  $(".setup").scrollTop = 0;
+  $("#own-name").focus({preventScroll:true});
+  if (matchMedia("(max-width:900px)").matches) $(".setup").scrollIntoView({block:"start"});
+}
+$("#edit-stores").addEventListener("click",openSetup);
+$("#setup-from-empty").addEventListener("click",openSetup);
+
 function updateRailCount() {
   const n = readInputs().filter(x => x.url).length;
   $("#rail-count").textContent = n ? `${n}店舗` : "";
@@ -860,6 +1030,8 @@ function attachSavedStoreControls(row) {
   select.addEventListener("change", () => {
     const selected = savedStores[Number(select.value)];
     if (select.value === "" || !selected) return;
+    clearFieldError(row.querySelector(".name")); clearFieldError(row.querySelector(".url"));
+    $("#form-msg").textContent="";
     row.querySelector(".name").value = selected.name;
     row.querySelector(".url").value = selected.url;
     select.value = "";
@@ -1040,16 +1212,43 @@ $("#google-logout").addEventListener("click",async()=>{
   }catch(error){sheetMessage(error.message);}
 });
 
+function clearFieldError(input) {
+  const id=input.getAttribute("aria-describedby");
+  if(id) document.getElementById(id)?.remove();
+  input.removeAttribute("aria-invalid");input.removeAttribute("aria-describedby");
+}
+let fieldErrorId=0;
+function markFieldError(input,message) {
+  clearFieldError(input);
+  const error=document.createElement("span");
+  error.id="field-error-"+(++fieldErrorId);error.className="field-error";error.textContent=message;
+  input.closest(".store").append(error);
+  input.setAttribute("aria-invalid","true");input.setAttribute("aria-describedby",error.id);
+  input.focus();
+}
+$(".setup").addEventListener("input",event=>{
+  if(event.target.matches("#form input")) {
+    if(event.target.hasAttribute("aria-invalid"))clearFieldError(event.target);
+    $("#form-msg").textContent="";
+  }
+});
+
 /* ---------------- 取得 ---------------- */
 $("#form").addEventListener("submit", async e => {
   e.preventDefault();
   const msg = $("#form-msg");
   msg.textContent = "";
+  document.querySelectorAll("#form input[aria-invalid]").forEach(clearFieldError);
   const entries = readInputs().filter(x => x.url);
   if (sheetBusy) { msg.textContent = "シートの読み込みが終わってから比較してください。"; return; }
-  if (!entries.length && !importedSheetStores.length) { msg.textContent = "比べるURLを1つ以上入れてください。"; return; }
+  if (!entries.length && !importedSheetStores.length) { msg.textContent = "比べるURLを1つ以上入れてください。"; markFieldError($("#own-url"),"在庫一覧ページのURLを入力してください。"); return; }
   const bad = entries.find(x => !validUrl(x.url));
-  if (bad) { msg.textContent = `URLの形式が正しくありません：${bad.url}`; return; }
+  if (bad) {
+    msg.textContent = "URLの形式を確認してください。";
+    const input=[...document.querySelectorAll("#form .url")].find(el=>el.value.trim()===bad.url);
+    if(input)markFieldError(input,"http:// または https:// で始まるURLを入力してください。");
+    return;
+  }
   if (location.protocol === "file:") { msg.textContent = "体験版ではサンプルデータでお試しください。実店舗の取得にはPythonアプリの起動が必要です。"; return; }
   saveInputs();
   $("#workspace-status").textContent = "店舗別の比較分析";
@@ -1083,12 +1282,14 @@ $("#form").addEventListener("submit", async e => {
   }));
   if (run === runId) {
     go.disabled = false; go.textContent = "在庫を比較する　→";
+    renderAll();
     // Only close after the whole run completes and at least one chart is available.
     // Keep the user's saved manual preference; failed-only runs leave inputs accessible.
     requestAnimationFrame(() => {
       if (run !== runId || signal.aborted) return;
       if (stores.some(s => s.status === "done" && s.data?.vehicles.length && (view.overlay ? $("#overlay-panel .js-plotly-plot") : s.el.querySelector(".js-plotly-plot")))) {
         setCollapsed(true, false, $(".setup").contains(document.activeElement));
+        if (matchMedia("(max-width:900px)").matches) $("#toolbar").scrollIntoView({block:"start"});
       }
     });
   }
@@ -1191,6 +1392,35 @@ async function load(s, run, signal) {
     } else { s.status = "error"; s.error = message; }
   }
   if (run === runId) renderAll();
+}
+
+$("#stop-loading").addEventListener("click",()=>{
+  activeLoad?.abort();
+  ++runId;
+  for (const store of stores) {
+    if (store.status !== "queued" && store.status !== "loading" && !store.progress) continue;
+    store.progress = "";
+    if (store.data?.pages) {
+      store.status = "done";
+      store.data.warnings.push("取得を中止しました。ここまでの" + store.data.pages + "ページ分を表示しています。");
+    } else { store.status = "error"; store.cancelled = true; store.error = "必要な店舗だけ、あとから取得し直せます。"; }
+  }
+  $("#go").disabled=false; $("#go").textContent="在庫を比較する　→";
+  renderAll();
+});
+
+async function retryStore(store) {
+  if ($("#go").disabled || sheetBusy || !store.request) return;
+  activeLoad?.abort(); activeLoad = new AbortController();
+  const run = ++runId;
+  store.cancelled=false; store.status="queued"; store.error="";
+  hiddenCompanies.delete(String(store.key));
+  $("#go").disabled=true; $("#go").textContent="読み込み中…";
+  renderAll();
+  await load(store,run,activeLoad.signal);
+  if (run !== runId) return;
+  $("#go").disabled=false; $("#go").textContent="在庫を比較する　→";
+  renderAll();
 }
 
 /* ---------------- 集計 ---------------- */
@@ -1348,9 +1578,10 @@ function buildPanels() {
   for (const s of stores) {
     const el = document.createElement("section");
     el.className = `panel ${s.role}`;
+    el.setAttribute("aria-label",s.name+"の在庫");
     el.innerHTML = `
       <header class="panel-head">
-        <div class="plate"><span class="plate-role">${s.role === "own" ? "自社" : "他社"}</span><span class="plate-name"></span></div>
+        <div class="plate"><span class="plate-role">${s.role === "own" ? "自社" : "他社"}</span><h3 class="plate-name"></h3></div>
         <a class="src" target="_blank" rel="noopener"></a>
       </header>
       <dl class="stats"></dl>
@@ -1362,11 +1593,27 @@ function buildPanels() {
     el.querySelector(".plate-name").title = s.name;
     const a = el.querySelector(".src"); a.href = s.url; a.textContent = hostOf(s.url); a.title = s.url;
     s.el = el;
+    el.addEventListener("click",event=>{ if(event.target.closest(".retry-store")) retryStore(s); });
     wrap.appendChild(el);
   }
 }
 
+function updateRunSummary() {
+  const pending = stores.filter(s => s.status === "queued" || s.status === "loading" || s.progress).length;
+  const finished = stores.filter(s => s.status === "done" && !s.progress).length;
+  const failed = stores.filter(s => s.status === "error" && !s.cancelled).length;
+  const cancelled = stores.filter(s => s.cancelled).length;
+  const vehicles = stores.reduce((sum,s)=>sum+(s.data?.vehicles.length || 0),0);
+  const text = !stores.length ? "店舗URL・Googleシートからデータを追加できます。"
+    : pending ? "取得中 " + (finished+failed+cancelled) + "/" + stores.length + "店舗 · " + vehicles.toLocaleString("ja-JP") + "台"
+    : finished + "/" + stores.length + "店舗 · " + vehicles.toLocaleString("ja-JP") + "台" + (failed ? " · " + failed + "店舗で取得できませんでした" : "") + (cancelled ? " · " + cancelled + "店舗を中止" : "");
+  if ($("#run-summary").textContent !== text) $("#run-summary").textContent=text;
+  $("#stop-loading").hidden = !pending || !activeLoad || activeLoad.signal.aborted;
+  $("#layout-description").textContent = view.overlay ? "全社のドットを重ね合わせ" : view.fitAll ? "全社を画面幅に表示" : "横スクロール・自社固定";
+}
+
 function renderAll() {
+  updateRunSummary();
   const wrap = $("#panels");
   wrap.classList.toggle("fit-all", view.fitAll);
   wrap.style.setProperty("--store-count", Math.max(1, stores.length));
@@ -1540,7 +1787,7 @@ function renderPanel(s, sh) {
     clear(); return;
   }
   if (s.status === "error") {
-    placeholder(`<div class="failed" style="height:100%"><strong>読み込めませんでした</strong><span>${esc(s.error)}</span><span>取得先や通信状況をご確認のうえ、再試行してください。</span></div>`);
+    placeholder(`<div class="failed" style="height:100%"><strong>${s.cancelled ? "取得を中止しました" : "読み込めませんでした"}</strong><span>${esc(s.error)}</span><span>この店舗だけ再試行できます。</span>${s.request ? '<button type="button" class="retry-store" '+($("#go").disabled || sheetBusy ? 'disabled' : '')+'>この店舗を再試行</button>' : ''}</div>`);
     clear(); return;
   }
 
@@ -1659,7 +1906,8 @@ function renderPanel(s, sh) {
   }
 
   drawChart(chart, traces, {
-    height, margin: { t: isKm ? 24 : 6, r: 10, b: 46, l: 8 },
+    height, width: Math.max(1, Math.round(chart.clientWidth)),
+    margin: { t: isKm ? 24 : 6, r: 10, b: 46, l: 8 },
     font: { family: getComputedStyle(document.body).fontFamily, size: 12, color: ink2 },
     paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: ramp[0], showlegend: false,
     legend: { orientation: "h", x: 0, y: 1.13, xanchor: "left", yanchor: "bottom", font: { color: ink }, uirevision: "company-visibility-" + runId },
@@ -1808,6 +2056,7 @@ function startDemo() {
     source.removeAttribute("target");
   }
   renderAll();
+  if (matchMedia("(max-width:900px)").matches) requestAnimationFrame(()=>$("#toolbar").scrollIntoView({block:"start"}));
 }
 $("#try-demo").addEventListener("click", startDemo);
 

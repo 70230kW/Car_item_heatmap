@@ -20,6 +20,7 @@ const assert=require('node:assert/strict');
    renderAll();
   });
   async function checkTicks(){
+   await page.waitForFunction(()=>[...document.querySelectorAll("#panels .chart")].every(e=>e._fullLayout && Math.abs(e._fullLayout.width-e.clientWidth)<2));
    await page.waitForFunction(()=>[...document.querySelectorAll('#panels .chart')].every(e=>e._fullLayout?.xaxis.tickvals.length<10));
    const axes=await page.locator('#panels .chart').evaluateAll(charts=>charts.map(chart=>({
     ticks:chart._fullLayout.xaxis.tickvals,
