@@ -185,12 +185,11 @@
   .quad-demo .x { grid-column: 2; text-align: center; }
 
   .panels {
-    display: grid; grid-auto-flow: column; grid-auto-columns: minmax(420px, 1fr); gap: 14px;
-    overflow-x: auto; padding-bottom: 8px; align-items: start;
+    display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px;
+    align-items: start;
   }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 14px 12px; min-width: 0; }
-  .panel.own { position: sticky; left: 0; z-index: 2; }
-  .panels.scrolled .panel.own { box-shadow: var(--shadow); }
+  .panel.own { position: static; }
 
   .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
   .plate {
@@ -269,8 +268,6 @@
     .collapsed .rail { flex-direction: row; justify-content: flex-start; padding: 10px 16px; height: auto; }
     .rail .rail-text, .rail .rail-count { writing-mode: horizontal-tb; letter-spacing: 0; }
     .board { padding: 16px 16px 40px; }
-    .panels { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: minmax(0, 1fr); overflow: visible; }
-    .panel.own { position: static; }
     .legend { margin-left: 0; }
     .empty { margin-top: 32px; }
   }
@@ -1224,7 +1221,6 @@ const onSplit = (el, key) => el.addEventListener("change", () => {
 onSplit($("#sp-price"), "price"); onSplit($("#sp-year"), "year"); onSplit($("#sp-km"), "km");
 $("#sp-reset").addEventListener("click", () => { view.split = { price: null, year: null, km: null }; renderAll(); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => stores.length && renderAll());
-$("#panels").addEventListener("scroll", e => e.currentTarget.classList.toggle("scrolled", e.currentTarget.scrollLeft > 4));
 
 
 function startDemo() {
