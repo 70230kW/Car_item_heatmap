@@ -121,3 +121,9 @@ Playwrightの既定のChromiumを使用します。独自のブラウザを使�
 ## 非公開Googleスプレッドシート
 
 Google接続を利用する場合は、[GOOGLE_SHEETS.md](GOOGLE_SHEETS.md)のOAuth設定を行い、RenderのEnvironmentにGOOGLE_CLIENT_ID・GOOGLE_CLIENT_SECRET・GOOGLE_REDIRECT_URIを設定してください。設定しなくても、既存のスクレイピング・サンプル表示は利用できます。OAuthトークンはメモリ内で管理するため、ワーカーは1のままにします。実シート接続は設定後の確認が必要です。
+
+車両区分の色合わせ・区分ごとの密度の回帰テスト:
+
+    node test_ui_category_colors.cjs
+
+帯グラフ・ドット・ぼかしの色、走行距離不明のグレー、区分別密度の合計、重ね合わせの会社別形状を確認します。

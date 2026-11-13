@@ -248,7 +248,7 @@
   td.miss { color: var(--err-ink); }
 
   /* 走行距離の区分（未使用車→チョイ乗り→中古車の順に薄くなる順序付きの濃淡。文字ラベルを必ず添える） */
-  :root { --cat-new: var(--heat-5); --cat-short: var(--heat-4); --cat-used: var(--heat-3); --cat-unknown: var(--line); }
+  :root { --cat-new: var(--heat-5); --cat-short: var(--heat-4); --cat-used: var(--heat-3); --cat-unknown: #9aa5b8; }
   .cats { margin: 10px 2px 6px; }
   .catbar { display: flex; gap: 2px; height: 10px; border-radius: 3px; overflow: hidden; background: var(--field); }
   .catbar i { display: block; min-width: 0; }
@@ -293,7 +293,7 @@
   /* Dark aurora background with Material-style tonal surfaces and state layers. */
   :root {
     --bg:#10131e; --panel:#1c2232; --field:#272e40;
-    --surface-low:#171c2a; --surface-high:#2b3247; --dot:#67e8f9;
+    --surface-low:#171c2a; --surface-high:#2b3247;
     --ink:#e8eaf5; --ink-2:#c4cadf; --ink-3:#a3adc6;
     --line:#424b64; --plate:#c6bdff; --plate-soft:#c6bdff;
     --plate-ink:#292044; --focus:#b9ccff;
@@ -413,7 +413,7 @@
   .setup input:focus,.setup select:focus { background:#30394e; border-bottom:2px solid var(--plate); padding-bottom:11px; }
   .src { color:var(--ink-2); }
   /* Bloom only the marker group; axes, annotations and hover labels stay crisp. */
-  .chart .scatterlayer .trace.scatter .points { filter:drop-shadow(0 0 3px #67e8f9a6) drop-shadow(0 0 6px #22d3ee40); }
+  .chart .scatterlayer .trace.scatter .points { filter:drop-shadow(0 0 3px #ffffff66) drop-shadow(0 0 6px #ffffff20); }
   .overlay-panel { margin-bottom:24px; padding:20px; border-radius:18px; background:#202638e6; border:1px solid #92a0c426; box-shadow:0 4px 12px #00000026; }
   .overlay-panel h2 { font-size:17px; margin:0; }
   .overlay-guide { color:var(--ink-2); font-size:12px; margin:0 0 14px; }
@@ -431,6 +431,9 @@
   .sheet-preview { max-height:180px; overflow:auto; font-size:11px; margin:10px 0; }
   .sheet-preview table { min-width:360px; }
   #sheet-message { overflow-wrap:anywhere; }
+  .category-color-legend { display:flex; flex-wrap:wrap; gap:8px 18px; color:var(--ink-2); font-size:12px; }
+  .category-color-legend span { display:inline-flex; align-items:center; gap:6px; }
+  .legend .bar { background:linear-gradient(90deg,#c8d5df00,#c8d5df); }
   .company-list { display:flex; flex-wrap:wrap; gap:10px; margin:0 0 18px; }
   .company-toggle { display:flex; align-items:center; gap:9px; padding:10px 14px; min-height:44px; border:1px solid #69789c; border-radius:12px; background:#2b344b; color:var(--ink); cursor:pointer; font-size:12px; max-width:100%; }
   .company-name { overflow-wrap:anywhere; text-align:left; }
@@ -611,9 +614,15 @@
           <input type="range" id="dot-size" min="3" max="18" step="1" value="7">
           <span id="dot-size-value">7px</span>
         </label>
+        <div class="category-color-legend" aria-label="車両区分の色">
+          <span><i class="sw c-new" aria-hidden="true"></i>未使用車</span>
+          <span><i class="sw c-short" aria-hidden="true"></i>チョイ乗り車</span>
+          <span><i class="sw c-used" aria-hidden="true"></i>中古車</span>
+          <span><i class="sw c-unknown" aria-hidden="true"></i>走行距離不明</span>
+        </div>
         <div class="legend">
           <span>少ない</span><span class="bar" aria-hidden="true"></span><span>多い</span>
-          <span id="lg-note">（全店舗で共通の目盛り）</span>
+          <span id="lg-note">（全店舗で共通。ぼかしの重なりは混色）</span>
         </div>
       </div>
 
@@ -669,7 +678,7 @@
 
     <section id="overlay-panel" class="overlay-panel" hidden aria-label="全社の重ね合わせ比較">
       <header class="panel-head"><h2>全社の重ね合わせ比較</h2></header>
-      <p class="overlay-guide">会社リストを押すとドットの表示をON／OFFにできます。OFFの会社はグレー表示になります。集計表は全社分です。</p>
+      <p class="overlay-guide">色は車両区分、形は会社を表します。会社リストを押すとドットの表示をON／OFFにできます。OFFの会社はグレー表示になります。集計表は全社分です。</p>
       <div id="company-list" class="company-list" aria-label="重ね合わせで表示する会社"></div>
       <dl class="stats"></dl><div class="cats"></div><div class="chart"></div><div class="notes"></div>
       <details class="rows"><summary></summary><div class="tablewrap"></div></details>
@@ -1297,26 +1306,33 @@ function perStore(s, sh) {
   // 2次元の密度：各車両を価格方向・横軸方向にガウス分布で広げて足し合わせる
   const { ps, as, abw, astep } = sh, bw = view.bw;
   const z = ps.map(() => new Float64Array(as.length));
+  const categories = Object.fromEntries([...new Set(known.map(catOf))].map(key =>
+    [key, ps.map(() => new Float64Array(as.length))]));
   const rp = Math.ceil(3.5 * bw / STEP), ra = Math.ceil(3.5 * abw / astep);
   for (const v of known) {
-    const vp = v.price, va = aPos(v);
+    const vp = v.price, va = aPos(v), category = categories[catOf(v)];
     const ip = Math.round((vp - sh.pmin) / STEP), ia = Math.round((va - sh.amin) / astep);
     for (let j = Math.max(0, ip - rp); j <= Math.min(ps.length - 1, ip + rp); j++) {
       const dp = (ps[j] - vp) / bw, gp = Math.exp(-0.5 * dp * dp);
       const row = z[j];
       for (let i = Math.max(0, ia - ra); i <= Math.min(as.length - 1, ia + ra); i++) {
         const da = (as[i] - va) / abw;
-        row[i] += gp * Math.exp(-0.5 * da * da);
+        const value = gp * Math.exp(-0.5 * da * da);
+        row[i] += value;
+        category[j][i] += value;
       }
     }
   }
   const scale = view.mode === "share" && known.length ? 1 / known.length : 1;
   out.z = z.map(row => Array.from(row, val => { val *= scale; if (val > out.zpeak) out.zpeak = val; return val; }));
+  out.categoryZ = Object.fromEntries(Object.entries(categories).map(([key,matrix]) =>
+    [key, matrix.map(row => Array.from(row, value => value * scale))]));
   return out;
 }
 
 /* ---------------- 描画 ---------------- */
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const categoryColor = key => css("--cat-" + key);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmt = (n, d = 0) => n == null ? "—" : n.toLocaleString("ja-JP", { maximumFractionDigits: d });
 const pct = (n, d) => d ? Math.round(n / d * 100) : 0;
@@ -1376,12 +1392,11 @@ function renderAll() {
 }
 
 function companyMarker(store) {
-  if (store.role === "own") return { color: "#67e8f9", symbol: "circle", size: view.dotSize };
+  if (store.role === "own") return { color: css("--ink-2"), symbol: "circle", size: view.dotSize };
   const index = stores.filter(s => s.role !== "own").indexOf(store);
-  const colors = ["#ffb36b", "#c5a2ff", "#8be0ab", "#ffa4cc", "#f6dc7a", "#93baff"];
   const symbols = ["diamond-open", "square-open", "triangle-up-open", "cross", "star-open", "hexagon-open"];
   return {
-    color: index < colors.length ? colors[index] : "hsl(" + ((index * 137.508) % 360) + ",75%,72%)",
+    color: css("--ink-2"),
     symbol: symbols[index % symbols.length], size: view.dotSize
   };
 }
@@ -1567,13 +1582,18 @@ function renderPanel(s, sh) {
 
   const ink = css("--ink"), ink2 = css("--ink-2"), ink3 = css("--ink-3"), line = css("--line"), panel = css("--panel");
   const ramp = ["--heat-0", "--heat-1", "--heat-2", "--heat-3", "--heat-4", "--heat-5"].map(css);
-  const stops = [0, .06, .22, .48, .74, 1];
   const n = p.known.length;
 
-  const traces = !s.overlay && view.style === "blur" ? [{
-    type: "heatmap", x: sh.as, y: sh.ps, z: p.z, zmin: 0, zmax: sh.zmax, zsmooth: "best",
-    colorscale: stops.map((t, i) => [t, ramp[i]]), showscale: false, hoverinfo: "skip",
-  }] : [];
+  const traces = !s.overlay && view.style === "blur"
+    ? ["unknown","used","short","new"].filter(key => p.categoryZ[key]).map(key => {
+      const color = categoryColor(key);
+      return {
+        type:"heatmap", name:catName(key), meta:{category:key}, x:sh.as, y:sh.ps,
+        z:p.categoryZ[key], zmin:0, zmax:sh.zmax, zsmooth:"best",
+        colorscale:[[0,rgba(color,0)],[.06,rgba(color,.02)],[.3,rgba(color,.4)],[.65,rgba(color,.72)],[1,color]],
+        showscale:false, hoverinfo:"skip"
+      };
+    }) : [];
   if (s.overlay) {
     // Draw the own-company trace last so it remains visible at coincident positions.
     const companies = stores.filter(company => company.status === "done" && sh.per.get(company.key))
@@ -1581,6 +1601,7 @@ function renderPanel(s, sh) {
     for (const company of companies) {
       const points = sh.per.get(company.key).known;
       const marker = companyMarker(company);
+      const colors = points.map(v => categoryColor(catOf(v)));
       const index = stores.indexOf(company);
       const name = (company.role === "own" ? "自社：" : "他社：") + company.name;
       traces.push({
@@ -1589,9 +1610,9 @@ function renderPanel(s, sh) {
         legendgroup: "company-" + index, legendrank: index,
         x: points.map((v,i) => isYear ? v.year + (((i * .6180339 + index * .19) % 1) - .5) * .5 : lg(v.mileage)),
         y: points.map(v => v.price),
-        customdata: points.map(v => [esc(name), esc(v.text.slice(0,80)), v.year ?? "不明", v.mileage == null ? "不明" : fmt(v.mileage)]),
-        marker: { ...marker, opacity: .88, line: { width: company.role === "own" ? 0 : 1.5, color: marker.color } },
-        hovertemplate: "<b>%{customdata[0]}</b><br>%{customdata[1]}<br>%{y:.1f}万円 / %{customdata[2]}年 / 走行%{customdata[3]}km<extra></extra>"
+        customdata: points.map(v => [esc(name), esc(v.text.slice(0,80)), v.year ?? "不明", v.mileage == null ? "不明" : fmt(v.mileage), catName(catOf(v))]),
+        marker: { ...marker, color:colors, opacity: .88, line: { width: company.role === "own" ? 0 : 1.5, color: colors } },
+        hovertemplate: "<b>%{customdata[0]}</b><br>%{customdata[1]}<br>%{y:.1f}万円 / %{customdata[2]}年 / 走行%{customdata[3]}km（%{customdata[4]}）<extra></extra>"
       });
     }
   } else if (view.style === "dots") {
@@ -1602,7 +1623,7 @@ function renderPanel(s, sh) {
       x: p.known.map((v, i) => isYear ? v.year + jit(i) : lg(v.mileage)),
       y: p.known.map(v => v.price),
       customdata: p.known.map(v => [v.text.slice(0, 40), v.year ?? "不明", v.mileage == null ? "不明" : fmt(v.mileage), catName(catOf(v))]),
-      marker: { size: view.dotSize, color: css("--dot"), opacity: .9, line: { width: 0 } },
+      marker: { size: view.dotSize, color: p.known.map(v => categoryColor(catOf(v))), opacity: .9, line: { width: 0 } },
       hovertemplate: "%{customdata[0]}<br>%{y:.1f}万円 / %{customdata[1]}年 / 走行%{customdata[2]}km（%{customdata[3]}）<extra></extra>",
     });
   }
