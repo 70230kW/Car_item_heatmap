@@ -185,11 +185,12 @@
   .quad-demo .x { grid-column: 2; text-align: center; }
 
   .panels {
-    display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px;
-    align-items: start;
+    display: grid; grid-auto-flow: column; grid-auto-columns: minmax(440px, 1fr); gap: 20px;
+    overflow-x: auto; padding-bottom: 10px; align-items: start;
   }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 14px 12px; min-width: 0; }
-  .panel.own { position: static; }
+  .panel.own { position: sticky; left: 0; z-index: 2; }
+  .panels.scrolled .panel.own { box-shadow:var(--shadow); }
 
   .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
   .plate {
@@ -422,6 +423,8 @@
     .workspace-badge { display:none; }
     .workspace-head h2 { font-size:22px; }
     .quad-demo { height:210px; }
+    .panels { grid-auto-columns:minmax(320px,1fr); }
+    .panel.own { position:static; }
     .tool-row { gap:12px; }
     .split-row .ctl { flex-wrap:wrap; }
   }
@@ -616,7 +619,7 @@ let runId = 0;
 let activeLoad = null;
 
 /* ---------------- サイドメニューの開閉 ---------------- */
-function setCollapsed(c, save = true) {
+function setCollapsed(c, save = true, moveFocus = true) {
   $("#app").classList.toggle("collapsed", c);
   $("#fold").setAttribute("aria-expanded", String(!c));
   $("#rail").setAttribute("aria-expanded", String(!c));
@@ -624,7 +627,7 @@ function setCollapsed(c, save = true) {
   // 幅が変わったグラフを描き直す（アニメーション後にも念のため）
   const fit = () => document.querySelectorAll(".js-plotly-plot").forEach(el => Plotly.Plots.resize(el));
   requestAnimationFrame(fit); setTimeout(fit, 260);
-  (c ? $("#rail") : $("#fold")).focus({ preventScroll: true });
+  if (moveFocus) (c ? $("#rail") : $("#fold")).focus({ preventScroll: true });
 }
 $("#fold").addEventListener("click", () => setCollapsed(true));
 $("#rail").addEventListener("click", () => setCollapsed(false));
@@ -719,7 +722,17 @@ $("#form").addEventListener("submit", async e => {
       await load(pending[next++], run, signal);
     }
   }));
-  if (run === runId) { go.disabled = false; go.textContent = "在庫を比較する　→"; }
+  if (run === runId) {
+    go.disabled = false; go.textContent = "在庫を比較する　→";
+    // Only close after the whole run completes and at least one chart is available.
+    // Keep the user's saved manual preference; failed-only runs leave inputs accessible.
+    requestAnimationFrame(() => {
+      if (run !== runId || signal.aborted) return;
+      if (stores.some(s => s.status === "done" && s.data?.vehicles.length && s.el.querySelector(".js-plotly-plot"))) {
+        setCollapsed(true, false, $(".setup").contains(document.activeElement));
+      }
+    });
+  }
 });
 
 function retryDelay(value, attempt) {
@@ -839,6 +852,7 @@ function niceYearTicks(lo, hi, width) {
   const step = [1, 2, 5, 10].map(n => n * magnitude).find(n => n >= needed);
   const ticks = [];
   for (let year = Math.ceil(first / step) * step; year <= last; year += step) ticks.push(year);
+  if (ticks.length < 2 && last > first) return [first, last];
   return ticks.length ? ticks : [first];
 }
 
@@ -1221,6 +1235,10 @@ const onSplit = (el, key) => el.addEventListener("change", () => {
 onSplit($("#sp-price"), "price"); onSplit($("#sp-year"), "year"); onSplit($("#sp-km"), "km");
 $("#sp-reset").addEventListener("click", () => { view.split = { price: null, year: null, km: null }; renderAll(); });
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => stores.length && renderAll());
+
+$("#panels").addEventListener("scroll", e => {
+  e.currentTarget.classList.toggle("scrolled", e.currentTarget.scrollLeft > 4);
+});
 
 
 function startDemo() {
