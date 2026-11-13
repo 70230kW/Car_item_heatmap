@@ -159,7 +159,7 @@ const sleep = ms => new Promise(resolve=>setTimeout(resolve,ms));
       assert.equal(calls,3);
       assert.equal(await page.evaluate(()=>stores[0].data.pages),2);
       assert.equal(await page.evaluate(()=>stores[0].data.vehicles.length),2);
-      assert((await page.locator('.notes').innerText()).includes('2ページ分の結果を保持'));
+      assert((await page.locator('#panels .notes').innerText()).includes('2ページ分の結果を保持'));
       assert.equal(await page.locator('.failed').count(),0);
       assert.deepEqual(errors,[]);
       await page.close();

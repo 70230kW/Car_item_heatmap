@@ -9,7 +9,7 @@ import time
 import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 
 import requests
 from fastapi import HTTPException
@@ -76,6 +76,18 @@ class WebTests(unittest.TestCase):
         for name in ("favicon.svg", "apple-touch-icon.png", "app-icon-512.png"):
             with self.subTest(name=name), urlopen(self.base + "/assets/" + name) as response:
                 self.assertEqual(response.status, 200)
+
+    def test_google_status_and_unauthenticated_import(self):
+        with urlopen(self.base + "/api/google/status") as response:
+            self.assertEqual(response.headers["Cache-Control"], "no-store")
+            self.assertFalse(json.load(response)["connected"])
+        request = Request(self.base + "/api/google/preview",
+                          data=json.dumps({"url": "https://docs.google.com/spreadsheets/d/" + "a"*40 + "/edit"}).encode(),
+                          headers={"Content-Type": "application/json"})
+        with self.assertRaises(HTTPError) as error:
+            urlopen(request)
+        self.assertEqual(error.exception.code, 401)
+        self.assertEqual(error.exception.headers["Cache-Control"], "no-store")
 
     def test_input_errors_and_ssrf(self):
         for route, status in (

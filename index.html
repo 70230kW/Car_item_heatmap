@@ -421,6 +421,25 @@
   .chart .modebar { background:var(--panel)!important; border-radius:8px; }
   .chart .modebar-btn path { fill:var(--ink-2)!important; }
   .chip.rival { background:#293044; }
+  .google-sheets { margin:0 0 18px; padding:12px; border:1px solid var(--line); border-radius:12px; font-size:12px; background:#1c223280; }
+  .google-sheets summary { cursor:pointer; font-weight:700; color:var(--ink-2); }
+  .google-sheets label { display:grid; gap:5px; margin:10px 0; color:var(--ink-2); min-width:0; }
+  .google-sheets input,.google-sheets select { font-size:12px; }
+  .google-actions { display:flex; flex-wrap:wrap; gap:8px; }
+  .google-actions a { display:inline-flex; align-items:center; text-decoration:none; }
+  .sheet-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
+  .sheet-preview { max-height:180px; overflow:auto; font-size:11px; margin:10px 0; }
+  .sheet-preview table { min-width:360px; }
+  #sheet-message { overflow-wrap:anywhere; }
+  .company-list { display:flex; flex-wrap:wrap; gap:10px; margin:0 0 18px; }
+  .company-toggle { display:flex; align-items:center; gap:9px; padding:10px 14px; min-height:44px; border:1px solid #69789c; border-radius:12px; background:#2b344b; color:var(--ink); cursor:pointer; font-size:12px; max-width:100%; }
+  .company-name { overflow-wrap:anywhere; text-align:left; }
+  .company-swatch { font-size:22px; line-height:1; flex:none; }
+  .company-state { font-size:11px; white-space:nowrap; color:var(--ink-2); }
+  .company-toggle[aria-pressed="false"] { background:#202431; border-color:#444c60; color:#929aaf; }
+  .company-toggle[aria-pressed="false"] .company-swatch { filter:grayscale(1); opacity:.45; }
+  .company-toggle[aria-pressed="false"] .company-state { color:#929aaf; }
+  .company-toggle:disabled { cursor:default; }
   .saved-stores { margin:0 0 10px; padding:12px; border:1px solid var(--line); border-radius:12px; background:#1c223280; font-size:12px; }
   .saved-stores summary { cursor:pointer; font-weight:700; color:var(--ink-2); }
   .saved-help { color:var(--ink-3); font-size:11px; line-height:1.7; margin:10px 0; }
@@ -486,6 +505,31 @@
         <summary>登録店舗 <span id="saved-count">0</span>件</summary>
         <p class="saved-help">このブラウザに保存します。各入力欄の一覧から呼び出せます。</p>
         <div id="saved-list"></div>
+      </details>
+      <details class="google-sheets">
+        <summary>非公開Googleスプレッドシート</summary>
+        <p class="saved-help">Googleアカウントで読み取り専用接続します。シートを公開する必要はありません。</p>
+        <div class="google-actions"><a id="google-connect" class="save-store" href="/auth/google/login">Googleに接続</a><button id="google-logout" type="button" class="save-store" hidden>切断</button></div>
+        <p id="google-status" class="saved-help">接続状態を確認中…</p>
+        <label>スプレッドシートのURL<input type="url" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/…"></label>
+        <div class="sheet-grid"><label>見出しの行番号<input type="number" id="sheet-header" min="1" max="50" value="1"></label><label>シート<select id="sheet-tab" disabled><option value="">先頭のシート</option></select></label></div>
+        <button id="sheet-read" type="button" class="save-store" disabled>列とデータを読み込む</button>
+        <div id="sheet-mapping" hidden>
+          <p class="saved-help">列の対応と単位を確認してください。空欄・不正な価格の行は取り込みません。</p>
+          <div class="sheet-grid">
+            <label>価格（必須）<select id="map-price"></select></label><label>価格の単位<select id="sheet-price-unit"><option value="man">万円</option><option value="yen">円</option></select></label>
+            <label>年式<select id="map-year"></select></label><label>走行距離<select id="map-mileage"></select></label>
+            <label>走行距離の単位<select id="sheet-mileage-unit"><option value="km">km</option><option value="man_km">万km</option></select></label>
+            <label>車名<select id="map-name"></select></label><label>会社名の列<select id="map-company"></select></label>
+          </div>
+          <label>店舗名（会社名列のない場合）<input type="text" id="sheet-company" placeholder="店舗名"></label>
+          <label>取込先<select id="sheet-role"><option value="rival">他社（複数会社も可）</option><option value="own">自社（1社分）</option></select></label>
+          <p class="saved-help">自社として取り込むと、比較中の自社データを置き換えます。取り込んだデータは再読み込みすると消えます。</p>
+          <div id="sheet-preview" class="sheet-preview"></div>
+          <button id="sheet-import" type="button" class="save-store">グラフに追加する</button>
+        </div>
+        <p id="sheet-message" role="status" aria-live="polite" class="saved-help"></p>
+        <div id="imported-sheets"></div>
       </details>
       <p id="saved-message" class="saved-message" role="status" aria-live="polite"></p>
       <form id="form" novalidate>
@@ -563,6 +607,10 @@
             <input type="radio" name="chart-style" id="style-dots" value="dots"><label for="style-dots">ドット</label>
           </div>
         </div>
+        <label class="ctl" id="dot-size-control" hidden>ドットの大きさ
+          <input type="range" id="dot-size" min="3" max="18" step="1" value="7">
+          <span id="dot-size-value">7px</span>
+        </label>
         <div class="legend">
           <span>少ない</span><span class="bar" aria-hidden="true"></span><span>多い</span>
           <span id="lg-note">（全店舗で共通の目盛り）</span>
@@ -621,7 +669,8 @@
 
     <section id="overlay-panel" class="overlay-panel" hidden aria-label="全社の重ね合わせ比較">
       <header class="panel-head"><h2>全社の重ね合わせ比較</h2></header>
-      <p class="overlay-guide">色と形で会社を区別します。凡例を押すと会社ごとに表示を切り替えられます。集計表は全社分です。</p>
+      <p class="overlay-guide">会社リストを押すとドットの表示をON／OFFにできます。OFFの会社はグレー表示になります。集計表は全社分です。</p>
+      <div id="company-list" class="company-list" aria-label="重ね合わせで表示する会社"></div>
       <dl class="stats"></dl><div class="cats"></div><div class="chart"></div><div class="notes"></div>
       <details class="rows"><summary></summary><div class="tablewrap"></div></details>
     </section>
@@ -664,12 +713,15 @@ const KM_SPLIT_DEFAULT = 100;   // 走行距離軸の四象限の初期境界 = 
 const catOf = v => v.mileage == null ? "unknown" : CATS.find(c => c.test(v.mileage)).key;
 const catName = key => (CATS.find(c => c.key === key) || CAT_UNKNOWN).name;
 
-const view = { axis: "year", mode: "count", bw: 30, style: "blur", fitAll: false, overlay: false, split: { price: null, year: null, km: null } };
+const view = { axis: "year", mode: "count", bw: 30, style: "blur", dotSize: 7, fitAll: false, overlay: false, split: { price: null, year: null, km: null } };
 let stores = [];   // {key, role, name, url, status: loading|done|error, data, error, el}
 let runId = 0;
 let activeLoad = null;
 const SAVED_STORES_KEY = "inventory-heatmap:registered-stores:v1";
 let savedStores = [];
+const hiddenCompanies = new Set();
+let importedSheetStores = [];
+let sheetPreview = null, sheetBusy = false, googleConfigured = false, googleConnected = false;
 
 /* ---------------- サイドメニューの開閉 ---------------- */
 function setCollapsed(c, save = true, moveFocus = true) {
@@ -678,7 +730,7 @@ function setCollapsed(c, save = true, moveFocus = true) {
   $("#rail").setAttribute("aria-expanded", String(!c));
   if (save) { try { localStorage.setItem(UI_KEY, c ? "collapsed" : "open"); } catch (_) {} }
   // 幅が変わったグラフを描き直す（アニメーション後にも念のため）
-  const fit = () => document.querySelectorAll(".js-plotly-plot").forEach(el => Plotly.Plots.resize(el));
+  const fit = () => { if (stores.some(s => s.status === "done")) renderAll(); };
   requestAnimationFrame(fit); setTimeout(fit, 260);
   if (moveFocus) (c ? $("#rail") : $("#fold")).focus({ preventScroll: true });
 }
@@ -845,13 +897,148 @@ function refreshSavedStores() {
   });
 }
 
+/* ---------------- 非公開Googleスプレッドシート ---------------- */
+function sheetMessage(message) { $("#sheet-message").textContent = message; }
+
+async function googleStatus() {
+  try {
+    const response = await fetch("/api/google/status");
+    if (!response.ok) throw new Error();
+    const state = await response.json();
+    googleConfigured = state.configured; googleConnected = state.connected;
+    $("#google-status").textContent = state.connected ? "Google接続済み（読み取り専用）"
+      : state.configured ? "Googleアカウントに接続してください。" : "管理者によるGoogle接続の設定が必要です。";
+    $("#google-connect").textContent = state.connected ? "別のアカウントに接続" : "Googleに接続";
+    $("#google-logout").hidden = !state.connected;
+    $("#sheet-read").disabled = !state.connected;
+    if (!state.connected) $("#sheet-mapping").hidden = true;
+  } catch (_) { $("#google-status").textContent = "Google接続の状態を確認できませんでした。"; }
+}
+$("#google-connect").addEventListener("click", event => {
+  if (!googleConfigured) { event.preventDefault(); sheetMessage("管理者がGoogle接続を設定した後に接続できます。"); }
+});
+
+async function sheetRequest(path, body) {
+  const response = await fetch(path, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+  const data = await response.json().catch(()=>({}));
+  if (!response.ok) {
+    if (response.status === 401) await googleStatus();
+    throw new Error(typeof data.detail === "string" ? data.detail : "シートを読み込めませんでした。設定をご確認ください。");
+  }
+  return data;
+}
+function sheetSource() {
+  return { url:$("#sheet-url").value.trim(), sheet:$("#sheet-tab").value, header_row:Number($("#sheet-header").value) };
+}
+function fillSheetMapping(table) {
+  const patterns = {price:/価格|金額|price/i,year:/年式|year/i,mileage:/走行|mileage|距離/i,name:/車名|車種|model/i,company:/会社|社名|店舗|販売店|company/i};
+  for (const field of Object.keys(patterns)) {
+    const select = $("#map-"+field);
+    select.replaceChildren(new Option(field === "price" ? "列を選択" : "指定しない",""));
+    table.headers.forEach((header,i)=>select.add(new Option((i+1)+": "+(header || "見出しなし"),String(i))));
+    const detected = table.headers.findIndex(header=>patterns[field].test(header));
+    if (detected >= 0) select.value = String(detected);
+  }
+  const priceHeader = table.headers[Number($("#map-price").value)] || "";
+  $("#sheet-price-unit").value = /円/.test(priceHeader) && !/万/.test(priceHeader) ? "yen" : "man";
+  const mileageHeader = table.headers[Number($("#map-mileage").value)] || "";
+  $("#sheet-mileage-unit").value = /万/.test(mileageHeader) ? "man_km" : "km";
+  if (!$("#sheet-company").value) $("#sheet-company").value = table.title || table.sheet;
+  const preview = $("#sheet-preview"); preview.replaceChildren();
+  const caption = document.createElement("p");
+  caption.textContent = table.rows.length + "行を読み込みました。" + (table.truncated ? "上限のため一部のみ読み込んでいます。" : "") + " 先頭3行：";
+  preview.append(caption);
+  const element = document.createElement("table");
+  for (const row of [table.headers,...table.rows.slice(0,3)]) {
+    const tr = document.createElement("tr");
+    row.forEach(cell=>{const td=document.createElement("td");td.textContent=String(cell);tr.append(td);});
+    element.append(tr);
+  }
+  preview.append(element);
+  $("#sheet-mapping").hidden = false;
+}
+$("#sheet-read").addEventListener("click", async ()=>{
+  if (sheetBusy) return;
+  sheetBusy = true; $("#sheet-read").disabled = true; $("#sheet-import").disabled = true;
+  $("#sheet-mapping").hidden = true; sheetPreview = null;
+  sheetMessage("シートを読み込んでいます…");
+  try {
+    const body = sheetSource();
+    const table = await sheetRequest("/api/google/preview",body);
+    if (JSON.stringify(sheetSource()) !== JSON.stringify(body)) { sheetMessage("接続先や見出し行が変更されました。列を読み直してください。"); return; }
+    sheetPreview = { ...body, sheet:table.sheet };
+    $("#sheet-tab").replaceChildren(...table.sheets.map(name=>new Option(name,name)));
+    $("#sheet-tab").value = table.sheet; $("#sheet-tab").disabled = false;
+    fillSheetMapping(table);
+    sheetMessage("列と単位を確認し「グラフに追加する」を押してください。");
+  } catch (error) { sheetMessage(error.message); }
+  finally { sheetBusy=false; $("#sheet-read").disabled=!googleConnected; $("#sheet-import").disabled=!googleConnected; }
+});
+$("#sheet-tab").addEventListener("change",()=>{ $("#sheet-mapping").hidden=true; sheetPreview=null; sheetMessage("選んだシートの列を読み直してください。"); });
+$("#sheet-url").addEventListener("input",()=>{ $("#sheet-tab").replaceChildren(new Option("先頭のシート","")); $("#sheet-tab").disabled=true; $("#sheet-mapping").hidden=true; sheetPreview=null; });
+$("#sheet-header").addEventListener("input",()=>{ $("#sheet-mapping").hidden=true; sheetPreview=null; });
+
+function showImportedStores() {
+  const list = $("#imported-sheets"); list.replaceChildren();
+  for (const store of importedSheetStores) {
+    const item=document.createElement("div");item.className="saved-item";
+    const label=document.createElement("span");label.textContent=store.name+" · "+store.data.vehicles.length+"台";
+    const remove=document.createElement("button");remove.type="button";remove.className="delete-saved";remove.textContent="取込解除";
+    remove.addEventListener("click",()=>{
+      if ($("#go").disabled || sheetBusy) { sheetMessage("取得処理の完了後に解除してください。"); return; }
+      importedSheetStores=importedSheetStores.filter(s=>s.key!==store.key);
+      stores=stores.filter(s=>s.key!==store.key);
+      refreshImportedView();
+    });
+    item.append(label,remove);list.append(item);
+  }
+}
+function refreshImportedView() {
+  if (!stores.length) view.overlay=false;
+  $("#empty").hidden=Boolean(stores.length);$("#toolbar").hidden=!stores.length;
+  buildPanels();renderAll();showImportedStores();
+}
+$("#sheet-import").addEventListener("click",async()=>{
+  if (!sheetPreview || sheetBusy) return;
+  if ($("#go").disabled) { sheetMessage("スクレイピングの完了後に追加してください。"); return; }
+  const mapping={};
+  for(const field of ["price","year","mileage","name","company"]){
+    const value=$("#map-"+field).value;if(value!=="")mapping[field]=Number(value);
+  }
+  const preview = sheetPreview;
+  sheetBusy=true;$("#sheet-import").disabled=true;sheetMessage("シートの最新データを取り込んでいます…");
+  try{
+    const result=await sheetRequest("/api/google/import",{...sheetPreview,mapping,company:$("#sheet-company").value.trim(),role:$("#sheet-role").value,price_unit:$("#sheet-price-unit").value,mileage_unit:$("#sheet-mileage-unit").value});
+    if (sheetPreview !== preview) { sheetMessage("シートの設定が変更されました。列を読み直して取り込んでください。"); return; }
+    const added=result.stores.map(s=>({...s,key:"google:"+result.source+":"+s.name,url:result.url,status:"done",sourceGoogle:result.source}));
+    const own=added.some(s=>s.role==="own");
+    importedSheetStores=importedSheetStores.filter(s=>s.sourceGoogle!==result.source && (!own || s.role!=="own"));
+    importedSheetStores.push(...added);
+    const web=stores.filter(s=>!s.sourceGoogle && !String(s.key).startsWith("demo-") && (!own || s.role!=="own"));
+    stores=[...importedSheetStores.filter(s=>s.role==="own"),...web,...importedSheetStores.filter(s=>s.role!=="own")];
+    hiddenCompanies.clear();
+    refreshImportedView();
+    sheetMessage(result.stores.length+"社・"+result.rows_read+"行を取り込みました。"+(result.skipped_rows ? result.skipped_rows+"行を除外しました。" : ""));
+  }catch(error){sheetMessage(error.message);}
+  finally{sheetBusy=false;$("#sheet-import").disabled=!googleConnected;}
+});
+$("#google-logout").addEventListener("click",async()=>{
+  if (sheetBusy || $("#go").disabled) {sheetMessage("取得処理の完了後に切断してください。");return;}
+  try{
+    await sheetRequest("/api/google/logout",{});
+    importedSheetStores=[];stores=stores.filter(s=>!s.sourceGoogle);
+    refreshImportedView();await googleStatus();sheetMessage("Google接続と取り込んだシートデータを解除しました。");
+  }catch(error){sheetMessage(error.message);}
+});
+
 /* ---------------- 取得 ---------------- */
 $("#form").addEventListener("submit", async e => {
   e.preventDefault();
   const msg = $("#form-msg");
   msg.textContent = "";
   const entries = readInputs().filter(x => x.url);
-  if (!entries.length) { msg.textContent = "比べるURLを1つ以上入れてください。"; return; }
+  if (sheetBusy) { msg.textContent = "シートの読み込みが終わってから比較してください。"; return; }
+  if (!entries.length && !importedSheetStores.length) { msg.textContent = "比べるURLを1つ以上入れてください。"; return; }
   const bad = entries.find(x => !validUrl(x.url));
   if (bad) { msg.textContent = `URLの形式が正しくありません：${bad.url}`; return; }
   if (location.protocol === "file:") { msg.textContent = "体験版ではサンプルデータでお試しください。実店舗の取得にはPythonアプリの起動が必要です。"; return; }
@@ -862,7 +1049,13 @@ $("#form").addEventListener("submit", async e => {
   activeLoad = new AbortController();
   const signal = activeLoad.signal;
   const run = ++runId;
-  stores = entries.map((x, i) => ({ ...x, key: i, name: x.name || hostOf(x.url), status: "queued", request: { basis: $("#basis").value, max_pages: $("#pages").value } }));
+  hiddenCompanies.clear();
+  const webStores = entries.map((x, i) => ({ ...x, key: i, name: x.name || hostOf(x.url), status: "queued", request: { basis: $("#basis").value, max_pages: $("#pages").value } }));
+  stores = [
+    ...importedSheetStores.filter(s => s.role === "own"),
+    ...webStores.filter(s => s.role !== "own" || !importedSheetStores.some(imported => imported.role === "own")),
+    ...importedSheetStores.filter(s => s.role !== "own")
+  ];
   view.split = { price: null, year: null, km: null };
   $("#empty").hidden = true;
   $("#toolbar").hidden = false;
@@ -872,7 +1065,7 @@ $("#form").addEventListener("submit", async e => {
   const go = $("#go");
   go.disabled = true; go.textContent = "読み込み中…";
   // Match the server's two scrape slots; additional stores wait in this queue.
-  const pending = stores.slice();
+  const pending = stores.filter(s => s.status === "queued");
   let next = 0;
   await Promise.allSettled(Array.from({ length: Math.min(2, pending.length) }, async () => {
     while (next < pending.length && run === runId && !signal.aborted) {
@@ -1134,6 +1327,7 @@ function rgba(hex, a) {
 
 function buildPanels() {
   const wrap = $("#panels");
+  wrap.querySelectorAll(".chart").forEach(chart=>scheduleChart(chart,()=>Plotly.purge(chart)));
   wrap.innerHTML = "";
   for (const s of stores) {
     const el = document.createElement("section");
@@ -1170,6 +1364,7 @@ function renderAll() {
   $('input[name="chart-style"]').closest(".ctl").hidden = view.overlay;
   const isBlur = view.style === "blur" && !view.overlay;
   $("#smooth-control").hidden = !isBlur;
+  $("#dot-size-control").hidden = isBlur;
   $("#density-control").hidden = !isBlur;
   $(".toolbar .legend").hidden = !isBlur;
   const sh = shared();
@@ -1181,25 +1376,87 @@ function renderAll() {
 }
 
 function companyMarker(store) {
-  if (store.role === "own") return { color: "#67e8f9", symbol: "circle", size: 7 };
+  if (store.role === "own") return { color: "#67e8f9", symbol: "circle", size: view.dotSize };
   const index = stores.filter(s => s.role !== "own").indexOf(store);
   const colors = ["#ffb36b", "#c5a2ff", "#8be0ab", "#ffa4cc", "#f6dc7a", "#93baff"];
   const symbols = ["diamond-open", "square-open", "triangle-up-open", "cross", "star-open", "hexagon-open"];
   return {
     color: index < colors.length ? colors[index] : "hsl(" + ((index * 137.508) % 360) + ",75%,72%)",
-    symbol: symbols[index % symbols.length], size: 9
+    symbol: symbols[index % symbols.length], size: view.dotSize
   };
 }
 
+// Serialize Plotly operations on each DOM node. Resize, import and filters may
+// otherwise call react/purge concurrently while Plotly is still constructing SVG layers.
+const chartOperations = new WeakMap();
+function scheduleChart(chart, action) {
+  let state = chartOperations.get(chart);
+  if (!state) { state = { busy:false, next:null }; chartOperations.set(chart,state); }
+  state.next = action;
+  if (state.busy) return;
+  const advance = () => {
+    const next = state.next;
+    state.next = null;
+    if (!next) { state.busy=false; return; }
+    state.busy=true;
+    Promise.resolve().then(next).catch(error => {
+      console.error("グラフの描画に失敗しました。",error);
+      chart.innerHTML='<div class="failed">グラフを描画できませんでした。表示を切り替えて再試行してください。</div>';
+    }).then(advance);
+  };
+  advance();
+}
+function replaceChart(chart, html) {
+  scheduleChart(chart, () => { Plotly.purge(chart); chart.innerHTML=html; });
+}
+function drawChart(chart, traces, layout, options) {
+  scheduleChart(chart, () => {
+    if (!chart.isConnected) return;
+    if (chart.querySelector(".loading,.failed")) { Plotly.purge(chart); chart.innerHTML=""; }
+    return Plotly.react(chart,traces,layout,options);
+  });
+}
+
+function renderCompanyList() {
+  const list = $("#company-list");
+  const active = document.activeElement?.closest(".company-toggle")?.dataset.companyKey;
+  list.replaceChildren();
+  const symbols = { circle:"●", "diamond-open":"◇", "square-open":"□", "triangle-up-open":"△", cross:"＋", "star-open":"☆", "hexagon-open":"⬡" };
+  for (const store of stores) {
+    const key = String(store.key), marker = companyMarker(store);
+    const ready = store.status === "done" && Boolean(store.data?.vehicles.length);
+    const on = !hiddenCompanies.has(key);
+    const button = document.createElement("button");
+    button.type = "button"; button.className = "company-toggle";
+    button.dataset.companyKey = key;
+    button.setAttribute("aria-pressed", String(on && ready));
+    button.disabled = !ready;
+    const swatch = document.createElement("span"); swatch.className = "company-swatch";
+    swatch.style.color = marker.color; swatch.textContent = symbols[marker.symbol] || "◇"; swatch.setAttribute("aria-hidden","true");
+    const label = document.createElement("span"); label.className = "company-name";
+    label.textContent = (store.role === "own" ? "自社：" : "他社：") + store.name;
+    const status = document.createElement("span"); status.className = "company-state";
+    status.textContent = ready ? (on ? "ON" : "OFF") + " · " + store.data.vehicles.length + "台"
+      : store.status === "error" ? "取得失敗" : store.status === "done" ? "0台" : "取得中";
+    button.append(swatch,label,status);
+    button.addEventListener("click", () => {
+      if (hiddenCompanies.has(key)) hiddenCompanies.delete(key); else hiddenCompanies.add(key);
+      renderAll();
+    });
+    list.append(button);
+    if (active === key) button.focus({preventScroll:true});
+  }
+}
+
 function renderOverlay(sh) {
+  renderCompanyList();
   const ready = stores.filter(s => s.status === "done" && s.data?.vehicles.length);
   const el = $("#overlay-panel");
   if (!ready.length) {
-    Plotly.purge(el.querySelector(".chart"));
     const pending = stores.some(s => s.status === "loading" || s.status === "queued" || s.progress);
-    el.querySelector(".chart").innerHTML = pending
+    replaceChart(el.querySelector(".chart"), pending
       ? '<div class="loading" style="height:280px">表示できる在庫データを待っています。</div>'
-      : '<div class="failed" style="height:280px">表示できる車両がありません。店舗別の表示に戻して取得結果をご確認ください。</div>';
+      : '<div class="failed" style="height:280px">表示できる車両がありません。店舗別の表示に戻して取得結果をご確認ください。</div>');
     el.querySelector(".stats").innerHTML = "";
     el.querySelector(".cats").innerHTML = "";
     el.querySelector(".notes").innerHTML = "";
@@ -1260,7 +1517,7 @@ function renderPanel(s, sh) {
   const height = 440;
   chart.style.height = height + "px";
 
-  const placeholder = html => { Plotly.purge(chart); chart.innerHTML = html; };
+  const placeholder = html => replaceChart(chart,html);
   const clear = () => { stats.innerHTML = ""; cats.innerHTML = ""; notes.innerHTML = ""; rows.hidden = true; };
   if (s.status === "loading" || s.status === "queued") {
     const progress = s.status === "queued" ? "ほかの店舗の取得が終わるまで順番待ちです" : s.progress || "読み込み中（最大" + s.request.max_pages + "ページ）";
@@ -1307,7 +1564,6 @@ function renderPanel(s, sh) {
     placeholder(`<div class="failed" style="height:100%"><strong>${isYear ? "年式" : "走行距離"}を読み取れませんでした</strong><span>「車両データを見る」で抽出したテキストに${isYear ? "年式" : "走行距離"}が含まれているか確認してください。</span></div>`);
     return;
   }
-  if (chart.querySelector(".loading, .failed")) chart.innerHTML = "";
 
   const ink = css("--ink"), ink2 = css("--ink-2"), ink3 = css("--ink-3"), line = css("--line"), panel = css("--panel");
   const ramp = ["--heat-0", "--heat-1", "--heat-2", "--heat-3", "--heat-4", "--heat-5"].map(css);
@@ -1328,8 +1584,9 @@ function renderPanel(s, sh) {
       const index = stores.indexOf(company);
       const name = (company.role === "own" ? "自社：" : "他社：") + company.name;
       traces.push({
-        type: "scatter", mode: "markers", name: esc(name), uid: String(company.key),
-        legendgroup: String(company.key), legendrank: index,
+        type: "scatter", mode: "markers", name: esc(name), uid: "company-" + index,
+        visible: !hiddenCompanies.has(String(company.key)),
+        legendgroup: "company-" + index, legendrank: index,
         x: points.map((v,i) => isYear ? v.year + (((i * .6180339 + index * .19) % 1) - .5) * .5 : lg(v.mileage)),
         y: points.map(v => v.price),
         customdata: points.map(v => [esc(name), esc(v.text.slice(0,80)), v.year ?? "不明", v.mileage == null ? "不明" : fmt(v.mileage)]),
@@ -1345,7 +1602,7 @@ function renderPanel(s, sh) {
       x: p.known.map((v, i) => isYear ? v.year + jit(i) : lg(v.mileage)),
       y: p.known.map(v => v.price),
       customdata: p.known.map(v => [v.text.slice(0, 40), v.year ?? "不明", v.mileage == null ? "不明" : fmt(v.mileage), catName(catOf(v))]),
-      marker: { size: 6, color: css("--dot"), opacity: .9, line: { width: 0 } },
+      marker: { size: view.dotSize, color: css("--dot"), opacity: .9, line: { width: 0 } },
       hovertemplate: "%{customdata[0]}<br>%{y:.1f}万円 / %{customdata[1]}年 / 走行%{customdata[2]}km（%{customdata[3]}）<extra></extra>",
     });
   }
@@ -1380,10 +1637,10 @@ function renderPanel(s, sh) {
     });
   }
 
-  Plotly.react(chart, traces, {
-    height, margin: { t: s.overlay ? 90 : isKm ? 24 : 6, r: 10, b: 46, l: 8 },
+  drawChart(chart, traces, {
+    height, margin: { t: isKm ? 24 : 6, r: 10, b: 46, l: 8 },
     font: { family: getComputedStyle(document.body).fontFamily, size: 12, color: ink2 },
-    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: ramp[0], showlegend: Boolean(s.overlay),
+    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: ramp[0], showlegend: false,
     legend: { orientation: "h", x: 0, y: 1.13, xanchor: "left", yanchor: "bottom", font: { color: ink }, uirevision: "company-visibility-" + runId },
     uirevision: s.overlay ? "overlay-" + runId : undefined,
     xaxis: {
@@ -1401,7 +1658,7 @@ function renderPanel(s, sh) {
     shapes, annotations,
     hoverlabel: { bgcolor: panel, bordercolor: line, font: { color: ink, size: 12 } },
   }, {
-    responsive: true, displaylogo: false, showTips: false, modeBarButtons: [["toImage"]],
+    responsive: false, displaylogo: false, showTips: false, modeBarButtons: [["toImage"]],
     toImageButtonOptions: { filename: `在庫四象限_${s.name}`, scale: 2 },
   });
 }
@@ -1457,6 +1714,11 @@ $("#fit-all").addEventListener("click", () => {
 });
 document.querySelectorAll("input[name=axis]").forEach(r => r.addEventListener("change", () => { view.axis = r.value; renderAll(); }));
 document.querySelectorAll("input[name=mode]").forEach(r => r.addEventListener("change", () => { view.mode = r.value; renderAll(); }));
+$("#dot-size").addEventListener("input", e => {
+  view.dotSize = Number(e.target.value);
+  $("#dot-size-value").textContent = view.dotSize + "px";
+  renderAll();
+});
 $("#bw").addEventListener("input", e => { view.bw = +e.target.value; $("#bwv").textContent = `±${view.bw}万円`; renderAll(); });
 document.querySelectorAll('input[name="chart-style"]').forEach(r => r.addEventListener("change", () => {
   view.style = r.value; renderAll();
@@ -1493,6 +1755,7 @@ function startDemo() {
   }
   activeLoad?.abort();
   ++runId; // Ignore responses from a previous live request.
+  hiddenCompanies.clear();
   $("#go").disabled = false;
   $("#go").textContent = "在庫を比較する　→";
   $("#form-msg").textContent = "";
@@ -1527,6 +1790,10 @@ function startDemo() {
 }
 $("#try-demo").addEventListener("click", startDemo);
 
+googleStatus();
+const googleResult = new URLSearchParams(location.search).get("google");
+if (googleResult === "connected") sheetMessage("Googleに接続しました。シートのURLを入力してください。");
+else if (googleResult === "cancelled" || googleResult === "failed") sheetMessage("Google接続が完了しませんでした。接続をやり直してください。");
 loadSavedStores();
 attachSavedStoreControls($(".store.own"));
 loadInputs();

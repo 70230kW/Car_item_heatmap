@@ -2,13 +2,25 @@ from pathlib import Path
 from threading import BoundedSemaphore
 
 import requests
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from scraper import scrape
+from google_sheets import router as google_router
 
 app = FastAPI(title="在庫レンズ")
+app.include_router(google_router)
+
+
+@app.middleware("http")
+async def private_google_responses(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith(("/api/google/", "/auth/google/")):
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Vary"] = "Cookie, Origin"
+    return response
+
 ROOT = Path(__file__).resolve().parent
 app.mount("/assets", StaticFiles(directory=ROOT / "assets"), name="assets")
 # Keep slow scraping requests from occupying every web worker thread.
