@@ -20,8 +20,8 @@ const assert=require('node:assert/strict');
    renderAll();
   });
   async function checkTicks(){
-   await page.waitForFunction(()=>[...document.querySelectorAll('.chart')].every(e=>e._fullLayout?.xaxis.tickvals.length<10));
-   const axes=await page.locator('.chart').evaluateAll(charts=>charts.map(chart=>({
+   await page.waitForFunction(()=>[...document.querySelectorAll('#panels .chart')].every(e=>e._fullLayout?.xaxis.tickvals.length<10));
+   const axes=await page.locator('#panels .chart').evaluateAll(charts=>charts.map(chart=>({
     ticks:chart._fullLayout.xaxis.tickvals,
     range:chart._fullLayout.xaxis.range,
     labels:[...chart.querySelectorAll('.xtick text')].map(e=>{
@@ -39,20 +39,20 @@ const assert=require('node:assert/strict');
    assert.deepEqual(axes[0].ticks,axes[1].ticks,'stores use different year ticks');
   }
   await checkTicks();
-  assert.deepEqual(await page.locator('.chart').first().evaluate(e=>e.data.map(t=>t.type)),['heatmap']);
+  assert.deepEqual(await page.locator('#panels .chart').first().evaluate(e=>e.data.map(t=>t.type)),['heatmap']);
   await page.click('label[for="style-dots"]');
-  assert.deepEqual(await page.locator('.chart').first().evaluate(e=>e.data.map(t=>t.type)),['scatter']);
+  assert.deepEqual(await page.locator('#panels .chart').first().evaluate(e=>e.data.map(t=>t.type)),['scatter']);
   assert(await page.locator('#smooth-control').isHidden());
-  const dotsCount=await page.locator('.chart').first().evaluate(e=>e.data[0].x.length);
+  const dotsCount=await page.locator('#panels .chart').first().evaluate(e=>e.data[0].x.length);
   assert.equal(dotsCount,48);
-  assert.equal(await page.locator('.chart').first().evaluate(e=>e.data[0].marker.color),'#67e8f9');
-  assert.notEqual(await page.locator('.chart .scatterlayer .points').first().evaluate(e=>getComputedStyle(e).filter),'none');
-  assert.equal(await page.locator('.chart .xaxislayer-above').first().evaluate(e=>getComputedStyle(e).filter),'none');
+  assert.equal(await page.locator('#panels .chart').first().evaluate(e=>e.data[0].marker.color),'#67e8f9');
+  assert.notEqual(await page.locator('#panels .chart .scatterlayer .points').first().evaluate(e=>getComputedStyle(e).filter),'none');
+  assert.equal(await page.locator('#panels .chart .xaxislayer-above').first().evaluate(e=>getComputedStyle(e).filter),'none');
   await checkTicks();
   await page.click('label[for="ax-km"]');
-  assert.deepEqual(await page.locator('.chart').first().evaluate(e=>e.data.map(t=>t.type)),['scatter']);
+  assert.deepEqual(await page.locator('#panels .chart').first().evaluate(e=>e.data.map(t=>t.type)),['scatter']);
   await page.click('label[for="style-blur"]');
-  assert.deepEqual(await page.locator('.chart').first().evaluate(e=>e.data.map(t=>t.type)),['heatmap']);
+  assert.deepEqual(await page.locator('#panels .chart').first().evaluate(e=>e.data.map(t=>t.type)),['heatmap']);
   assert(await page.locator('#smooth-control').isVisible());
   await page.click('label[for="md-share"]');
   await page.click('label[for="ax-year"]');

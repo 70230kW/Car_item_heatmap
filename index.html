@@ -414,6 +414,10 @@
   .src { color:var(--ink-2); }
   /* Bloom only the marker group; axes, annotations and hover labels stay crisp. */
   .chart .scatterlayer .trace.scatter .points { filter:drop-shadow(0 0 3px #67e8f9a6) drop-shadow(0 0 6px #22d3ee40); }
+  .overlay-panel { margin-bottom:24px; padding:20px; border-radius:18px; background:#202638e6; border:1px solid #92a0c426; box-shadow:0 4px 12px #00000026; }
+  .overlay-panel h2 { font-size:17px; margin:0; }
+  .overlay-guide { color:var(--ink-2); font-size:12px; margin:0 0 14px; }
+  #overlay-panel .scatterlayer .trace.scatter .points { filter:drop-shadow(0 0 3px #ffffff40); }
   .chart .modebar { background:var(--panel)!important; border-radius:8px; }
   .chart .modebar-btn path { fill:var(--ink-2)!important; }
   .chip.rival { background:#293044; }
@@ -514,6 +518,7 @@
     </header>
     <div class="toolbar" id="toolbar" hidden>
       <div class="tool-row">
+        <button type="button" id="overlay-toggle" class="layout-toggle" aria-pressed="false" aria-controls="overlay-panel">重ねて比較する</button>
         <button type="button" id="fit-all" class="layout-toggle" aria-pressed="false" aria-controls="panels">1画面で比較する</button>
       </div>
       <div class="tool-row">
@@ -595,6 +600,12 @@
       </div>
     </div>
 
+    <section id="overlay-panel" class="overlay-panel" hidden aria-label="全社の重ね合わせ比較">
+      <header class="panel-head"><h2>全社の重ね合わせ比較</h2></header>
+      <p class="overlay-guide">色と形で会社を区別します。凡例を押すと会社ごとに表示を切り替えられます。集計表は全社分です。</p>
+      <dl class="stats"></dl><div class="cats"></div><div class="chart"></div><div class="notes"></div>
+      <details class="rows"><summary></summary><div class="tablewrap"></div></details>
+    </section>
     <div class="panels" id="panels"></div>
 
     <section class="compare" id="cat-compare" hidden>
@@ -634,7 +645,7 @@ const KM_SPLIT_DEFAULT = 100;   // 走行距離軸の四象限の初期境界 = 
 const catOf = v => v.mileage == null ? "unknown" : CATS.find(c => c.test(v.mileage)).key;
 const catName = key => (CATS.find(c => c.key === key) || CAT_UNKNOWN).name;
 
-const view = { axis: "year", mode: "count", bw: 30, style: "blur", fitAll: false, split: { price: null, year: null, km: null } };
+const view = { axis: "year", mode: "count", bw: 30, style: "blur", fitAll: false, overlay: false, split: { price: null, year: null, km: null } };
 let stores = [];   // {key, role, name, url, status: loading|done|error, data, error, el}
 let runId = 0;
 let activeLoad = null;
@@ -749,7 +760,7 @@ $("#form").addEventListener("submit", async e => {
     // Keep the user's saved manual preference; failed-only runs leave inputs accessible.
     requestAnimationFrame(() => {
       if (run !== runId || signal.aborted) return;
-      if (stores.some(s => s.status === "done" && s.data?.vehicles.length && s.el.querySelector(".js-plotly-plot"))) {
+      if (stores.some(s => s.status === "done" && s.data?.vehicles.length && (view.overlay ? $("#overlay-panel .js-plotly-plot") : s.el.querySelector(".js-plotly-plot")))) {
         setCollapsed(true, false, $(".setup").contains(document.activeElement));
       }
     });
@@ -922,7 +933,7 @@ function shared() {
     sh.autoA = Math.round(median(all.map(v => v.year)));
     sh.splitA = view.split.year ?? sh.autoA;
     sh.lineA = sh.splitA - 0.5;
-    const widths = ready.map(s => s.el?.querySelector(".chart")?.clientWidth).filter(w => w > 0);
+    const widths = view.overlay ? [$("#overlay-panel .chart").clientWidth] : ready.map(s => s.el?.querySelector(".chart")?.clientWidth).filter(w => w > 0);
     sh.ticks = niceYearTicks(amin, amax, widths.length ? Math.min(...widths) : 360);
     sh.ticktext = sh.ticks.map(y => `${y}年`);
   } else {
@@ -963,7 +974,7 @@ function perStore(s, sh) {
   out.outside = vs.filter(v => v.price < sh.pmin || v.price > sh.pmax).length;
   if (!sh.hasA) return out;
   known.forEach(v => out.quad[quadOf(v, sh)]++);
-  if (view.style === "dots") return out;
+  if (view.style === "dots" || view.overlay) return out;
 
   // 2次元の密度：各車両を価格方向・横軸方向にガウス分布で広げて足し合わせる
   const { ps, as, abw, astep } = sh, bw = view.bw;
@@ -1026,15 +1037,66 @@ function renderAll() {
   wrap.style.setProperty("--store-count", Math.max(1, stores.length));
   $("#fit-all").setAttribute("aria-pressed", String(view.fitAll));
   $("#fit-all").textContent = view.fitAll ? "横スクロールで比較する" : "1画面で比較する";
-  const isBlur = view.style === "blur";
+  wrap.hidden = view.overlay;
+  $("#overlay-panel").hidden = !view.overlay;
+  $("#overlay-toggle").setAttribute("aria-pressed", String(view.overlay));
+  $("#overlay-toggle").textContent = view.overlay ? "店舗別の表示に戻す" : "重ねて比較する";
+  $("#fit-all").hidden = view.overlay;
+  $('input[name="chart-style"]').closest(".ctl").hidden = view.overlay;
+  const isBlur = view.style === "blur" && !view.overlay;
   $("#smooth-control").hidden = !isBlur;
   $("#density-control").hidden = !isBlur;
   $(".toolbar .legend").hidden = !isBlur;
   const sh = shared();
   syncSplitInputs(sh);
-  for (const s of stores) renderPanel(s, sh);
+  if (view.overlay) renderOverlay(sh);
+  else for (const s of stores) renderPanel(s, sh);
   renderCatCompare();
   renderCompare(sh);
+}
+
+function companyMarker(store) {
+  if (store.role === "own") return { color: "#67e8f9", symbol: "circle", size: 7 };
+  const index = stores.filter(s => s.role !== "own").indexOf(store);
+  const colors = ["#ffb36b", "#c5a2ff", "#8be0ab", "#ffa4cc", "#f6dc7a", "#93baff"];
+  const symbols = ["diamond-open", "square-open", "triangle-up-open", "cross", "star-open", "hexagon-open"];
+  return {
+    color: index < colors.length ? colors[index] : "hsl(" + ((index * 137.508) % 360) + ",75%,72%)",
+    symbol: symbols[index % symbols.length], size: 9
+  };
+}
+
+function renderOverlay(sh) {
+  const ready = stores.filter(s => s.status === "done" && s.data?.vehicles.length);
+  const el = $("#overlay-panel");
+  if (!ready.length) {
+    Plotly.purge(el.querySelector(".chart"));
+    const pending = stores.some(s => s.status === "loading" || s.status === "queued" || s.progress);
+    el.querySelector(".chart").innerHTML = pending
+      ? '<div class="loading" style="height:280px">表示できる在庫データを待っています。</div>'
+      : '<div class="failed" style="height:280px">表示できる車両がありません。店舗別の表示に戻して取得結果をご確認ください。</div>';
+    el.querySelector(".stats").innerHTML = "";
+    el.querySelector(".cats").innerHTML = "";
+    el.querySelector(".notes").innerHTML = "";
+    el.querySelector(".rows").hidden = true;
+    return;
+  }
+  const combined = {
+    key: "__overlay", overlay: true, role: "overlay", name: "全社比較", el, status: "done",
+    data: {
+      vehicles: ready.flatMap(s => s.data.vehicles),
+      pages: ready.reduce((sum,s) => sum + s.data.pages, 0),
+      warnings: ready.flatMap(s => (s.data.warnings || []).map(w => s.name + "：" + w))
+    }
+  };
+  const pending = stores.filter(s => s.status === "loading" || s.status === "queued" || s.progress);
+  const failed = stores.filter(s => s.status === "error");
+  if (pending.length) combined.data.warnings.push(pending.length + "店舗は取得中です。取得できた店舗から表示しています。");
+  if (failed.length) combined.data.warnings.push("取得できなかった店舗：" + failed.map(s=>s.name).join("、"));
+  if (sh) sh.per.set(combined.key, perStore(combined, sh));
+  renderPanel(combined, sh);
+  // Source rows are kept in the individual-store view to retain company ownership.
+  el.querySelector(".rows").hidden = true;
 }
 
 function syncSplitInputs(sh) {
@@ -1127,11 +1189,30 @@ function renderPanel(s, sh) {
   const stops = [0, .06, .22, .48, .74, 1];
   const n = p.known.length;
 
-  const traces = view.style === "blur" ? [{
+  const traces = !s.overlay && view.style === "blur" ? [{
     type: "heatmap", x: sh.as, y: sh.ps, z: p.z, zmin: 0, zmax: sh.zmax, zsmooth: "best",
     colorscale: stops.map((t, i) => [t, ramp[i]]), showscale: false, hoverinfo: "skip",
   }] : [];
-  if (view.style === "dots") {
+  if (s.overlay) {
+    // Draw the own-company trace last so it remains visible at coincident positions.
+    const companies = stores.filter(company => company.status === "done" && sh.per.get(company.key))
+      .sort((a,b) => Number(a.role === "own") - Number(b.role === "own"));
+    for (const company of companies) {
+      const points = sh.per.get(company.key).known;
+      const marker = companyMarker(company);
+      const index = stores.indexOf(company);
+      const name = (company.role === "own" ? "自社：" : "他社：") + company.name;
+      traces.push({
+        type: "scatter", mode: "markers", name: esc(name), uid: String(company.key),
+        legendgroup: String(company.key), legendrank: index,
+        x: points.map((v,i) => isYear ? v.year + (((i * .6180339 + index * .19) % 1) - .5) * .5 : lg(v.mileage)),
+        y: points.map(v => v.price),
+        customdata: points.map(v => [esc(name), esc(v.text.slice(0,80)), v.year ?? "不明", v.mileage == null ? "不明" : fmt(v.mileage)]),
+        marker: { ...marker, opacity: .88, line: { width: company.role === "own" ? 0 : 1.5, color: marker.color } },
+        hovertemplate: "<b>%{customdata[0]}</b><br>%{customdata[1]}<br>%{y:.1f}万円 / %{customdata[2]}年 / 走行%{customdata[3]}km<extra></extra>"
+      });
+    }
+  } else if (view.style === "dots") {
     // 年式は整数なので、点が重ならないよう横に少しずらす（位置は台ごとに固定）
     const jit = i => ((i * 0.6180339) % 1 - 0.5) * 0.5;
     traces.push({
@@ -1175,9 +1256,11 @@ function renderPanel(s, sh) {
   }
 
   Plotly.react(chart, traces, {
-    height, margin: { t: isKm ? 24 : 6, r: 10, b: 46, l: 8 },
+    height, margin: { t: s.overlay ? 90 : isKm ? 24 : 6, r: 10, b: 46, l: 8 },
     font: { family: getComputedStyle(document.body).fontFamily, size: 12, color: ink2 },
-    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: ramp[0], showlegend: false,
+    paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: ramp[0], showlegend: Boolean(s.overlay),
+    legend: { orientation: "h", x: 0, y: 1.13, xanchor: "left", yanchor: "bottom", font: { color: ink }, uirevision: "company-visibility-" + runId },
+    uirevision: s.overlay ? "overlay-" + runId : undefined,
     xaxis: {
       type: "linear", tickmode: "array", automargin: true, tickfont: { size: 11 },
       range: [sh.amin, sh.amax], tickvals: sh.ticks, ticktext: sh.ticktext, showgrid: false, zeroline: false,
@@ -1193,7 +1276,7 @@ function renderPanel(s, sh) {
     shapes, annotations,
     hoverlabel: { bgcolor: panel, bordercolor: line, font: { color: ink, size: 12 } },
   }, {
-    responsive: true, displaylogo: false, modeBarButtons: [["toImage"]],
+    responsive: true, displaylogo: false, showTips: false, modeBarButtons: [["toImage"]],
     toImageButtonOptions: { filename: `在庫四象限_${s.name}`, scale: 2 },
   });
 }
@@ -1236,6 +1319,10 @@ function renderCompare(sh) {
 }
 
 /* ---------------- 表示の切り替え ---------------- */
+$("#overlay-toggle").addEventListener("click", () => {
+  view.overlay = !view.overlay;
+  renderAll();
+});
 $("#fit-all").addEventListener("click", () => {
   view.fitAll = !view.fitAll;
   if (view.fitAll) setCollapsed(true, false, false);
@@ -1259,7 +1346,7 @@ new ResizeObserver(entries => {
   resizeFrame = requestAnimationFrame(() => {
     if (stores.some(s => s.status === "done")) renderAll();
   });
-}).observe($("#panels"));
+}).observe($(".board"));
 const onSplit = (el, key) => el.addEventListener("change", () => {
   const v = el.value.trim() === "" ? null : Number(el.value);
   view.split[key] = Number.isFinite(v) ? v : null;
