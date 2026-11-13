@@ -278,7 +278,7 @@
   /* Dark aurora background with Material-style tonal surfaces and state layers. */
   :root {
     --bg:#10131e; --panel:#1c2232; --field:#272e40;
-    --surface-low:#171c2a; --surface-high:#2b3247;
+    --surface-low:#171c2a; --surface-high:#2b3247; --dot:#67e8f9;
     --ink:#e8eaf5; --ink-2:#c4cadf; --ink-3:#a3adc6;
     --line:#424b64; --plate:#c6bdff; --plate-soft:#c6bdff;
     --plate-ink:#292044; --focus:#b9ccff;
@@ -396,6 +396,8 @@
   .setup input:hover,.setup select:hover { background:#30394e; }
   .setup input:focus,.setup select:focus { background:#30394e; border-bottom:2px solid var(--plate); padding-bottom:11px; }
   .src { color:var(--ink-2); }
+  /* Bloom only the marker group; axes, annotations and hover labels stay crisp. */
+  .chart .scatterlayer .trace.scatter .points { filter:drop-shadow(0 0 2px #67e8f961); }
   .chart .modebar { background:var(--panel)!important; border-radius:8px; }
   .chart .modebar-btn path { fill:var(--ink-2)!important; }
   .chip.rival { background:#293044; }
@@ -1100,7 +1102,7 @@ function renderPanel(s, sh) {
       x: p.known.map((v, i) => isYear ? v.year + jit(i) : lg(v.mileage)),
       y: p.known.map(v => v.price),
       customdata: p.known.map(v => [v.text.slice(0, 40), v.year ?? "不明", v.mileage == null ? "不明" : fmt(v.mileage), catName(catOf(v))]),
-      marker: { size: 6, color: rgba(ink, .8), line: { width: 0 } },
+      marker: { size: 6, color: css("--dot"), opacity: .9, line: { width: 0 } },
       hovertemplate: "%{customdata[0]}<br>%{y:.1f}万円 / %{customdata[1]}年 / 走行%{customdata[2]}km（%{customdata[3]}）<extra></extra>",
     });
   }
