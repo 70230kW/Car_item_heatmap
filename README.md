@@ -1,4 +1,4 @@
-# 在庫ヒートマップ比較
+# 在庫レンズ
 
 未使用車専門店の在庫一覧ページを読み込み、価格(縦軸) × 年式または走行距離(横軸) の四象限グラフで在庫の集まり方を、自社と他社を横並びに比較するWebアプリ。
 走行距離による車両区分（未使用車／チョイ乗り車／中古車）の台数も店舗ごとに集計する。
@@ -79,3 +79,7 @@ python C:\(展開した場所)\inventory-heatmap\run.py
 
 ## テスト
 `python test_scraper.py`
+
+## アプリアイコン
+
+アプリ名は「在庫レンズ」です。assets/app-icon.svg がベクター原本、app-icon-192.png と app-icon-512.png がPNG版です。favicon.svg／favicon.icoをブラウザタブに、apple-touch-icon.pngをiOSのホーム画面用アイコンに使用します。

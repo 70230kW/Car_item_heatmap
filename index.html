@@ -4,7 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#10131e">
-<title>在庫ヒートマップ比較</title>
+<title>在庫レンズ</title>
+<meta name="application-name" content="在庫レンズ">
+<meta name="apple-mobile-web-app-title" content="在庫レンズ">
+<link rel="icon" href="/assets/favicon.ico" sizes="32x32">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" sizes="180x180">
 <script src="/assets/plotly-2.35.2.min.js" charset="utf-8"></script>
 <style>
   /* 色: ナンバープレートの緑（事業用=緑地に白、自家用=白地に緑）を店舗の識別に、
@@ -316,7 +321,8 @@
   }
   .setup-body { width:310px; padding:30px 24px; }
   .brand { align-items:center; }
-  .brand h1 { font-size:19px; letter-spacing:.01em; margin:0; }
+  .brand h1 { display:flex; align-items:center; gap:10px; font-size:19px; letter-spacing:.01em; margin:0; }
+  .app-icon { width:32px; height:32px; flex:none; border-radius:8px; }
   .fold { border-color:var(--line); color:var(--ink-2); width:44px; height:44px; border-radius:50%; background:#2a32468c; }
   .intro { color:var(--ink-2); font-size:12px; margin:20px 0 28px; }
   legend { font-size:12px; margin-bottom:12px; }
@@ -407,7 +413,7 @@
   .setup input:focus,.setup select:focus { background:#30394e; border-bottom:2px solid var(--plate); padding-bottom:11px; }
   .src { color:var(--ink-2); }
   /* Bloom only the marker group; axes, annotations and hover labels stay crisp. */
-  .chart .scatterlayer .trace.scatter .points { filter:drop-shadow(0 0 2px #67e8f961); }
+  .chart .scatterlayer .trace.scatter .points { filter:drop-shadow(0 0 3px #67e8f9a6) drop-shadow(0 0 6px #22d3ee40); }
   .chart .modebar { background:var(--panel)!important; border-radius:8px; }
   .chart .modebar-btn path { fill:var(--ink-2)!important; }
   .chip.rival { background:#293044; }
@@ -454,7 +460,7 @@
 
     <div class="setup-body" id="setup-body">
       <div class="brand">
-        <h1>在庫ヒートマップ</h1>
+        <h1><img class="app-icon" src="/assets/app-icon.svg" alt="" width="32" height="32">在庫レンズ</h1>
         <button type="button" class="fold" id="fold" aria-label="入力欄をたたむ" aria-controls="setup-body" aria-expanded="true" title="入力欄をたたむ">‹</button>
       </div>
       <p class="intro">店舗名と在庫一覧URLを入力してください。</p>

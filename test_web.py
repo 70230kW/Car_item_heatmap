@@ -70,6 +70,13 @@ class WebTests(unittest.TestCase):
         with urlopen(self.base + "/assets/plotly-2.35.2.min.js") as response:
             self.assertEqual(response.read(), (ROOT / "assets/plotly-2.35.2.min.js").read_bytes())
 
+    def test_favicon(self):
+        with urlopen(self.base + "/favicon.ico") as response:
+            self.assertEqual(response.read(), (ROOT / "assets/favicon.ico").read_bytes())
+        for name in ("favicon.svg", "apple-touch-icon.png", "app-icon-512.png"):
+            with self.subTest(name=name), urlopen(self.base + "/assets/" + name) as response:
+                self.assertEqual(response.status, 200)
+
     def test_input_errors_and_ssrf(self):
         for route, status in (
             ("/api/analyze", 422),

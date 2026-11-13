@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from scraper import scrape
 
-app = FastAPI(title="在庫ヒートマップ")
+app = FastAPI(title="在庫レンズ")
 ROOT = Path(__file__).resolve().parent
 app.mount("/assets", StaticFiles(directory=ROOT / "assets"), name="assets")
 # Keep slow scraping requests from occupying every web worker thread.
@@ -18,6 +18,11 @@ SCRAPE_SLOTS = BoundedSemaphore(2)
 @app.get("/healthz")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    return FileResponse(ROOT / "assets" / "favicon.ico", media_type="image/x-icon")
 
 
 @app.get("/")
