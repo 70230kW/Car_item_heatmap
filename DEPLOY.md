@@ -89,3 +89,10 @@ Playwrightの既定のChromiumを使用します。独自のブラウザを使�
     python -m unittest -v test_carsensor test_web
 
 ブラウザ回帰テストには、500ページ分の模擬取得と、途中失敗時の部分結果保持も含まれます。
+
+
+年式ラベルの重なりとドット／ぼかし切替のブラウザ回帰テスト:
+
+    node test_ui_charts.cjs
+
+1990〜2026年の広い年式範囲で、PC・スマートフォンの目盛りと各表示方法を確認します。Playwrightの準備と起動先の指定はtest_ui_queue.cjsと同じです。
