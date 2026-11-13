@@ -185,12 +185,24 @@
   .quad-demo .x { grid-column: 2; text-align: center; }
 
   .panels {
-    display: grid; grid-auto-flow: column; grid-auto-columns: minmax(440px, 1fr); gap: 20px;
+    display: grid; grid-auto-flow: column; grid-auto-columns: 45%; gap: 20px;
     overflow-x: auto; padding-bottom: 10px; align-items: start;
   }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 14px 12px; min-width: 0; }
   .panel.own { position: sticky; left: 0; z-index: 2; }
   .panels.scrolled .panel.own { box-shadow:var(--shadow); }
+  .panels.fit-all { grid-auto-flow:row; grid-template-columns:repeat(var(--store-count),minmax(0,1fr)); grid-auto-columns:auto; gap:12px; }
+  .panels.fit-all .panel.own { position:static; box-shadow:none; }
+  .panels.fit-all .panel { padding:14px 12px; overflow:hidden; }
+  .panels.fit-all .plate { min-width:0; max-width:100%; padding:6px 8px; gap:6px; }
+  .panels.fit-all .plate-role { padding-right:6px; flex-shrink:0; }
+  .panels.fit-all .plate-name { font-size:14px; }
+  .panels.fit-all .src { display:none; }
+  .panels.fit-all .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,90px),1fr)); gap:8px; padding:10px; }
+  .panels.fit-all .stats dd { font-size:18px; overflow-wrap:anywhere; }
+  .panels.fit-all .panel-head { min-width:0; }
+  .layout-toggle { border:1px solid var(--plate); border-radius:24px; min-height:40px; padding:8px 18px; color:var(--plate); background:transparent; cursor:pointer; font-weight:700; font-size:13px; }
+  .layout-toggle[aria-pressed="true"] { background:var(--plate); color:var(--plate-ink); }
 
   .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
   .plate {
@@ -496,6 +508,9 @@
     </header>
     <div class="toolbar" id="toolbar" hidden>
       <div class="tool-row">
+        <button type="button" id="fit-all" class="layout-toggle" aria-pressed="false" aria-controls="panels">1画面で比較する</button>
+      </div>
+      <div class="tool-row">
         <div class="ctl">横軸
           <div class="seg" role="radiogroup" aria-label="横軸">
             <input type="radio" name="axis" id="ax-year" value="year" checked><label for="ax-year">年式</label>
@@ -613,7 +628,7 @@ const KM_SPLIT_DEFAULT = 100;   // 走行距離軸の四象限の初期境界 = 
 const catOf = v => v.mileage == null ? "unknown" : CATS.find(c => c.test(v.mileage)).key;
 const catName = key => (CATS.find(c => c.key === key) || CAT_UNKNOWN).name;
 
-const view = { axis: "year", mode: "count", bw: 30, style: "blur", split: { price: null, year: null, km: null } };
+const view = { axis: "year", mode: "count", bw: 30, style: "blur", fitAll: false, split: { price: null, year: null, km: null } };
 let stores = [];   // {key, role, name, url, status: loading|done|error, data, error, el}
 let runId = 0;
 let activeLoad = null;
@@ -1000,6 +1015,11 @@ function buildPanels() {
 }
 
 function renderAll() {
+  const wrap = $("#panels");
+  wrap.classList.toggle("fit-all", view.fitAll);
+  wrap.style.setProperty("--store-count", Math.max(1, stores.length));
+  $("#fit-all").setAttribute("aria-pressed", String(view.fitAll));
+  $("#fit-all").textContent = view.fitAll ? "横スクロールで比較する" : "1画面で比較する";
   const isBlur = view.style === "blur";
   $("#smooth-control").hidden = !isBlur;
   $("#density-control").hidden = !isBlur;
@@ -1210,6 +1230,13 @@ function renderCompare(sh) {
 }
 
 /* ---------------- 表示の切り替え ---------------- */
+$("#fit-all").addEventListener("click", () => {
+  view.fitAll = !view.fitAll;
+  if (view.fitAll) setCollapsed(true, false, false);
+  $("#panels").scrollLeft = 0;
+  $("#panels").classList.remove("scrolled");
+  renderAll();
+});
 document.querySelectorAll("input[name=axis]").forEach(r => r.addEventListener("change", () => { view.axis = r.value; renderAll(); }));
 document.querySelectorAll("input[name=mode]").forEach(r => r.addEventListener("change", () => { view.mode = r.value; renderAll(); }));
 $("#bw").addEventListener("input", e => { view.bw = +e.target.value; $("#bwv").textContent = `±${view.bw}万円`; renderAll(); });

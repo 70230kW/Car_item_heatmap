@@ -47,6 +47,34 @@ const delay=ms=>new Promise(r=>setTimeout(r,ms));
    assert(Math.abs(after[0].x-before[0].x)<1,'own store moved while scrolling');
    assert(after[1].x<before[1].x-100,'rival did not scroll');
    assert(await page.locator('#panels').evaluate(e=>e.classList.contains('scrolled')));
+   const regular = await page.locator('#panels').evaluate(e=>({
+    available:e.clientWidth, card:e.querySelector('.panel').getBoundingClientRect().width
+   }));
+   assert(Math.abs(regular.card/regular.available-.45)<.01,'regular card is not 45% of comparison area');
+   await page.click('#fit-all');
+   await page.waitForTimeout(350);
+   const fitted = await page.locator('#panels').evaluate(e=>{
+    const bounds=e.getBoundingClientRect();
+    return {
+     overflow:e.scrollWidth-e.clientWidth,
+     cards:[...e.querySelectorAll('.panel')].map(p=>{
+      const r=p.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top};
+     }),left:bounds.left,right:bounds.right
+    };
+   });
+   assert(fitted.overflow<=1,'fit mode still scrolls horizontally');
+   for(const card of fitted.cards){
+    assert(card.left>=fitted.left-1 && card.right<=fitted.right+1,'card outside comparison viewport');
+    assert.equal(card.top,fitted.cards[0].top);
+   }
+   assert.equal(await page.locator('#fit-all').getAttribute('aria-pressed'),'true');
+   assert.equal(await page.locator('.panel.own').evaluate(e=>getComputedStyle(e).position),'static');
+   await page.click('#fit-all');
+   await page.waitForTimeout(100);
+   const restored=await page.locator('#panels').evaluate(e=>e.querySelector('.panel').getBoundingClientRect().width/e.clientWidth);
+   assert(Math.abs(restored-.45)<.01,'cannot restore 45% cards');
+   assert.equal(await page.locator('.panel.own').evaluate(e=>getComputedStyle(e).position),'sticky');
+   console.log('PASS: 45% cards, fit-all button shows all five stores, toggle restores width and pinned own store');
    await page.click('#rail');
    assert(await page.locator('#setup-body').isVisible(),'cannot reopen input menu');
    await page.setViewportSize({width:390,height:844});
