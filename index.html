@@ -274,80 +274,113 @@
     .empty { margin-top: 32px; }
   }
 
-  /* Workspace visual design */
+  /* Aurora workspace: static ambient color, translucent surfaces, solid plot areas. */
   :root {
-    --bg:#f4f6f5; --panel:#fff; --ink:#182f29; --ink-2:#52685f;
-    --ink-3:#708078; --line:#dce5df; --field:#f7f9f7;
-    --plate:#176c4b; --plate-ink:#fff; --plate-soft:#176c4b; --focus:#32a979;
-    --warn-bg:#fff4d6; --warn-ink:#7a5000; --err-ink:#ad3737;
-    --heat-0:#fff; --heat-1:#e2f2e7; --heat-2:#b2dec4;
-    --heat-3:#70be97; --heat-4:#2d9366; --heat-5:#125c3d;
+    --bg:#f1f4fb; --panel:#ffffff; --field:#f0f3fa;
+    --ink:#1c2942; --ink-2:#4d5b74; --ink-3:#63718a;
+    --line:#d6deed; --plate:#4a56a6; --plate-soft:#4a56a6;
+    --plate-ink:#ffffff; --focus:#5865c5;
+    --err-ink:#a92b43; --warn-bg:#fff4dd; --warn-ink:#72511c;
+    --heat-0:#ffffff; --heat-1:#e8edf9; --heat-2:#c8d9ee;
+    --heat-3:#8bbdcf; --heat-4:#4b8da9; --heat-5:#355a91;
+    --shadow:0 0 0 1px var(--line),12px 0 24px -12px #2c396c26;
     color-scheme:light;
   }
-  body { font-size:14px; }
+  body {
+    font-size:14px;
+    background:
+      radial-gradient(ellipse at 12% 4%,#b7d9f0a8,transparent 48%),
+      radial-gradient(ellipse at 76% 8%,#d1c1f5ad,transparent 45%),
+      radial-gradient(ellipse at 94% 65%,#b8ebdf94,transparent 48%),
+      radial-gradient(ellipse at 18% 94%,#d6c9f08c,transparent 48%),
+      #f1f4fb;
+    background-attachment:fixed;
+  }
   .app { grid-template-columns:310px minmax(0,1fr); }
-  .setup { background:#123c30; border:0; color:#f0f6f2; }
+  .setup {
+    background:#ffffffad; color:var(--ink);
+    border-right:1px solid #ffffffd9;
+    backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+  }
   .setup-body { width:310px; padding:30px 24px; }
   .brand { align-items:center; }
-  .brand h1 { font-size:19px; letter-spacing:.03em; margin:0; }
-  .brand h1 small { display:block; font-size:10px; letter-spacing:.18em; color:#a5c8b6; margin-bottom:9px; font-weight:500; }
-  .fold { border-color:#426458; color:#bbd2c6; width:29px; height:29px; }
-  .intro { color:#b3ccbf; font-size:12px; margin:20px 0 30px; }
+  .brand h1 { font-size:19px; letter-spacing:.01em; margin:0; }
+  .fold { border-color:var(--line); color:var(--ink-2); width:30px; height:30px; background:#ffffff85; }
+  .intro { color:var(--ink-2); font-size:12px; margin:20px 0 28px; }
   legend { font-size:12px; margin-bottom:12px; }
-  legend small { color:#b3ccbf; }
+  legend small { color:var(--ink-3); }
   .setup fieldset { margin-bottom:26px; }
-  .setup .chip { border:0; padding:5px 9px; border-radius:5px; }
-  .setup .chip.own { background:#d7efdf; color:#174b35; }
-  .setup .chip.rival { background:#345b4d; color:#e1eee5; }
-  .setup input, .setup select { background:#234c3e; color:#fff; border-color:#496a5c; border-radius:8px; padding:11px 12px; }
-  .setup input::placeholder { color:#bbcdc1; font-weight:400; }
-  .setup .remove { border-color:#496a5c; color:#c6d8cd; }
-  .setup .store + .store { border-color:#496a5c; }
-  .setup .add { border-color:#678677; color:#d6e6db; font-size:12px; padding:11px; border-radius:8px; }
-  .setup .opts summary, .setup .opts-body label { color:#bfd3c6; }
-  .go { background:#c7ed90; color:#183c26; font-size:14px; letter-spacing:.03em; border-radius:9px; box-shadow:0 4px 14px #062a2440; }
-  .go:hover { background:#d8f4af; filter:none; }
-  .fine { color:#a8c2b3; font-size:11px; }
-  .setup .form-msg { color:#ffd3c9; }
-  .collapsed .rail { color:#d6e6db; }
-  .collapsed .rail:hover { background:#234c3e; }
+  .setup .chip { border:0; padding:5px 9px; border-radius:6px; }
+  .setup .chip.own { background:#e3e7fa; color:#3b478c; }
+  .setup .chip.rival { background:#dcefeb; color:#2c6059; }
+  .setup input, .setup select {
+    background:#ffffffc9; color:var(--ink); border-color:#cbd5e7;
+    border-radius:9px; padding:11px 12px;
+  }
+  .setup input::placeholder { color:#65738a; font-weight:400; }
+  input:focus,select:focus { border-color:var(--focus); }
+  .setup .remove { border-color:var(--line); color:var(--ink-2); background:#ffffff80; }
+  .setup .store + .store { border-color:var(--line); }
+  .setup .add { border-color:#9ba9c5; color:#455576; font-size:12px; padding:11px; border-radius:9px; background:#ffffff52; }
+  .setup .add:hover { background:#ffffffb3; border-color:var(--focus); color:var(--plate); }
+  .setup .opts summary,.setup .opts-body label { color:var(--ink-2); }
+  .go {
+    background:linear-gradient(115deg,#4e58a9,#416f99);
+    color:#fff; font-size:14px; letter-spacing:.02em; border-radius:10px;
+    box-shadow:0 5px 16px #5664ac26,inset 0 1px 0 #ffffff26;
+  }
+  .go:hover { filter:brightness(1.08); }
+  .fine { color:var(--ink-3); font-size:11px; }
+  .setup .form-msg { color:var(--err-ink); }
+  .collapsed .rail { color:var(--ink-2); }
+  .collapsed .rail:hover { background:#e3e8f4; }
   .board { padding:32px 38px 56px; }
-  .workspace-head { display:flex; align-items:center; justify-content:space-between; gap:16px; padding-bottom:25px; margin-bottom:30px; border-bottom:1px solid var(--line); }
-  .eyebrow { margin:0 0 7px; font-size:10px; font-weight:700; letter-spacing:.17em; color:var(--plate); }
-  .workspace-head h2 { font-size:24px; margin:0; letter-spacing:.02em; }
-  .workspace-head p:last-child { margin:5px 0 0; color:var(--ink-3); font-size:12px; }
-  .workspace-badge { display:flex; align-items:center; gap:7px; border:1px solid var(--line); border-radius:30px; padding:7px 12px; color:var(--ink-2); background:var(--panel); white-space:nowrap; font-size:11px; }
-  .workspace-badge i { width:6px; height:6px; background:#39936b; border-radius:50%; }
+  .workspace-head { display:flex; align-items:center; justify-content:space-between; gap:16px; padding-bottom:23px; margin-bottom:26px; border-bottom:1px solid #bfcce26b; }
+  .workspace-head h2 { font-size:23px; margin:0; letter-spacing:.01em; }
+  .workspace-head p { margin:7px 0 0; color:var(--ink-2); font-size:12px; }
+  .workspace-badge { display:flex; align-items:center; gap:7px; border:1px solid #ffffffd9; border-radius:30px; padding:7px 12px; color:var(--ink-2); background:#ffffff9e; white-space:nowrap; font-size:11px; }
+  .workspace-badge i { width:6px; height:6px; background:#4d8892; border-radius:50%; }
   .empty { max-width:1080px; margin:0 auto; }
-  .welcome { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:32px; background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:38px; box-shadow:0 8px 30px #183c2905; }
-  .empty h2 { font-size:clamp(23px,2.4vw,34px); line-height:1.5; letter-spacing:.01em; margin:12px 0 16px; }
+  .welcome,.toolbar,.panel,.compare,.step {
+    background:#ffffffbf; border:1px solid #fffffff0;
+    box-shadow:0 8px 32px #4655810a,inset 0 1px 0 #ffffff;
+    backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+  }
+  .welcome { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:32px; border-radius:20px; padding:32px; }
+  .empty h2 { font-size:21px; line-height:1.5; margin:0 0 16px; }
   .empty p { font-size:13px; line-height:1.9; }
-  .welcome-tag { display:inline-flex; align-items:center; gap:6px; background:#edf5ef; color:#30744e; padding:4px 10px; border-radius:5px; font-size:10px; font-weight:700; letter-spacing:.08em; }
-  .welcome-foot { margin-top:23px!important; color:var(--plate); font-weight:700; font-size:12px!important; }
-  .demo-card { background:#f6f9f6; border:1px solid #e4ebe4; border-radius:13px; padding:20px 18px 12px; transform:rotate(-1deg); }
+  .welcome-copy p { margin-bottom:16px; }
+  .demo-card { background:#f6f8fcde; border:1px solid #dde4f1; border-radius:14px; padding:20px 18px 12px; }
   .demo-caption { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:11px; font-weight:700; }
-  .demo-caption span { color:var(--ink-3); font-size:9px; font-weight:400; border:1px solid var(--line); padding:2px 6px; border-radius:4px; }
-  .quad-demo { height:230px; margin-top:20px; }
-  .quad-demo .plot { border-color:#a2b8aa; border-radius:6px 6px 0 0; background:radial-gradient(ellipse 24% 30% at 30% 68%,#37976799,transparent 80%),radial-gradient(ellipse 30% 28% at 70% 35%,#176c4bc9,transparent 80%),radial-gradient(ellipse 25% 25% at 63% 67%,#a2d782ab,transparent 85%),repeating-linear-gradient(0deg,transparent,transparent 39px,#e5ece5 40px),#fff; }
-  .quad-demo .plot::before, .quad-demo .plot::after { border-color:#afc0b3; }
-  .quad-demo .q { font-size:9px; background:#ffffffbf; padding:3px 5px; border-radius:3px; }
-  .demo-note { text-align:right; font-size:10px!important; color:var(--ink-3); margin:10px 0 0!important; }
-  .quick-start { margin-top:28px; }
+  .demo-caption span { color:var(--ink-3); font-size:10px; font-weight:400; border:1px solid var(--line); padding:2px 6px; border-radius:4px; }
+  .quad-demo { height:220px; margin-top:20px; }
+  .quad-demo .plot { border-color:#a9b8d1; border-radius:6px 6px 0 0; background:radial-gradient(ellipse 24% 30% at 30% 68%,#77afb9bd,transparent 80%),radial-gradient(ellipse 30% 28% at 70% 35%,#7875b9c2,transparent 80%),radial-gradient(ellipse 25% 25% at 63% 67%,#8ed2c3ab,transparent 85%),repeating-linear-gradient(0deg,transparent,transparent 39px,#e6eaf2 40px),#fff; }
+  .quad-demo .plot::before,.quad-demo .plot::after { border-color:#aebbd0; }
+  .quad-demo .q { font-size:10px; background:#ffffffd9; padding:3px 5px; border-radius:3px; }
+  .demo-note { text-align:right; font-size:11px!important; color:var(--ink-3); margin:10px 0 0!important; }
+  .quick-start { margin-top:26px; }
   .quick-start h3 { font-size:13px; margin:0 0 14px; }
   .steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
-  .step { border:1px solid var(--line); border-radius:12px; padding:20px; background:#ffffff80; }
-  .step-number { display:inline-grid; place-items:center; width:27px; height:27px; background:#e5eee7; color:#34724d; border-radius:8px; font-size:11px; font-weight:700; margin-bottom:13px; }
+  .step { border-radius:14px; padding:20px; }
+  .step-number { display:inline-grid; place-items:center; width:27px; height:27px; background:#e7eafa; color:#4a548d; border-radius:8px; font-size:11px; font-weight:700; margin-bottom:13px; }
   .step h4 { margin:0 0 6px; font-size:13px; color:var(--ink); }
   .step p { font-size:12px; margin:0; }
-  .toolbar { background:var(--panel); border:1px solid var(--line); border-radius:13px; padding:18px; margin-bottom:24px; }
-  .split-row { background:var(--field); border:0; padding:13px; }
-  .panel, .compare { border-radius:14px; box-shadow:0 4px 16px #183c2904; padding:20px; }
+  .toolbar { border-radius:16px; padding:18px; margin-bottom:24px; }
+  .split-row { background:#eff2fa; border:0; padding:13px; border-radius:10px; }
+  .seg { background:#f0f2f9; border-color:#d5dced; border-radius:9px; }
+  .seg input:checked + label { background:#4a56a6; }
+  .panel,.compare { border-radius:18px; padding:20px; }
+  .panel.own { background:#fdfdff; }
   .plate { border-width:1px; border-radius:7px; }
   .own .plate { box-shadow:none; }
-  .stats { background:var(--field); padding:14px; border-radius:9px; margin:16px 0 12px; gap:22px; }
+  .stats { background:#f0f3fa; padding:14px; border-radius:10px; margin:16px 0 12px; gap:22px; }
+  .chart { background:#fff; border-radius:10px; overflow:hidden; }
   th,td { padding:10px 8px; }
-  tbody tr:hover { background:var(--field); }
-  button, input, select { transition:background-color .15s,border-color .15s; }
+  tbody tr:hover { background:#edf1fa; }
+  button,input,select { transition:background-color .15s,border-color .15s; }
+  @supports not (backdrop-filter:blur(1px)) {
+    .setup,.welcome,.toolbar,.panel,.compare,.step { background:#f9faff; }
+  }
   @media (min-width:1500px) { .board { padding-left:56px; padding-right:56px; } }
   @media (max-width:1150px) { .welcome { padding:26px; gap:22px; } .board { padding:26px; } .steps { gap:10px; } .step { padding:16px; } }
   @media (max-width:900px) {
@@ -360,6 +393,7 @@
     .intro { margin-bottom:22px; }
   }
   @media (max-width:600px) {
+    body { background-attachment:scroll; }
     .welcome { grid-template-columns:1fr; padding:24px; gap:24px; }
     .steps { grid-template-columns:1fr; }
     .step { display:grid; grid-template-columns:28px 1fr; column-gap:12px; }
@@ -367,13 +401,11 @@
     .step p { grid-column:2; }
     .workspace-badge { display:none; }
     .workspace-head h2 { font-size:22px; }
-    .demo-card { transform:none; }
     .quad-demo { height:210px; }
     .tool-row { gap:12px; }
     .split-row .ctl { flex-wrap:wrap; }
   }
   @media (prefers-reduced-motion:reduce) { button,input,select { transition:none; } }
-
 </style>
 </head>
 <body>
@@ -387,10 +419,10 @@
 
     <div class="setup-body" id="setup-body">
       <div class="brand">
-        <h1><small>INVENTORY INSIGHT</small>在庫ヒートマップ</h1>
+        <h1>在庫ヒートマップ</h1>
         <button type="button" class="fold" id="fold" aria-label="入力欄をたたむ" aria-controls="setup-body" aria-expanded="true" title="入力欄をたたむ">‹</button>
       </div>
-      <p class="intro">在庫の違いを、次の戦略に。<br>比較したい店舗の情報を入力してください。</p>
+      <p class="intro">店舗名と在庫一覧URLを入力してください。</p>
 
       <form id="form" novalidate>
         <fieldset>
@@ -436,7 +468,7 @@
 
   <main class="board">
     <header class="workspace-head">
-      <div><p class="eyebrow">INVENTORY ANALYTICS</p><h2>在庫比較ワークスペース</h2><p>価格・年式・走行距離から、店舗ごとの強みを見つける。</p></div>
+      <div><h2>在庫比較</h2><p>価格 × 年式・走行距離の分布と、車両区分別の台数を表示します。</p></div>
       <span class="workspace-badge" id="workspace-status"><i aria-hidden="true"></i>店舗別の比較分析</span>
     </header>
     <div class="toolbar" id="toolbar" hidden>
@@ -483,12 +515,11 @@
     <div class="empty" id="empty">
       <div class="welcome">
         <div class="welcome-copy">
-          <span class="welcome-tag">在庫を、ひと目で。</span>
-          <h2>店舗の違いが見える。<br>次の一手が見つかる。</h2>
-          <p>自社と他社の在庫を、同じものさしで比較。<br>価格と年式の分布から、品揃えの特徴や<br>競合とのポジションを読み解きます。</p>
-          <p class="welcome-foot">店舗とURLを入力して、比較をはじめましょう →</p>
-          <button type="button" id="try-demo" class="go" style="width:auto;margin-top:12px;padding:12px 20px">サンプルで試す →</button>
-          <p style="font-size:11px;margin-top:8px">架空の3店舗のデータで、操作を体験できます。</p>
+          <h2>比較する店舗を設定</h2>
+          <p>入力欄に店舗名と在庫一覧URLを設定し、<br>「在庫を比較する」を押してください。</p>
+          <p>取得ページ数や価格の基準は、<br>「取得の設定」で変更できます。</p>
+          <button type="button" id="try-demo" class="go" style="width:auto;margin-top:12px;padding:12px 20px">サンプルデータを表示</button>
+          <p style="font-size:11px;margin-top:8px">サンプルは架空の3店舗・180台です。</p>
         </div>
         <div class="demo-card">
           <div class="demo-caption">価格 × 年式の在庫分布<span>グラフの見本</span></div>
@@ -506,11 +537,11 @@
         </div>
       </div>
       <div class="quick-start">
-        <h3>3ステップで、在庫の特徴をつかむ</h3>
+        <h3>操作手順</h3>
         <div class="steps">
           <article class="step"><span class="step-number">01</span><h4>店舗を登録</h4><p>自社と比較したい店舗の<br>在庫一覧URLを入力します。</p></article>
-          <article class="step"><span class="step-number">02</span><h4>分布を比較</h4><p>価格と年式・走行距離で<br>在庫の集まり方を並べて確認。</p></article>
-          <article class="step"><span class="step-number">03</span><h4>品揃えを読み解く</h4><p>四象限の構成比や車両区分で<br>それぞれの強みを把握します。</p></article>
+          <article class="step"><span class="step-number">02</span><h4>在庫を取得</h4><p>「在庫を比較する」を押します。<br>取得状況は店舗ごとに表示されます。</p></article>
+          <article class="step"><span class="step-number">03</span><h4>表示を切り替える</h4><p>グラフ上部で横軸・構成比・<br>四象限の境界値を変更できます。</p></article>
         </div>
       </div>
     </div>
