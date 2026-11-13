@@ -421,6 +421,19 @@
   .chart .modebar { background:var(--panel)!important; border-radius:8px; }
   .chart .modebar-btn path { fill:var(--ink-2)!important; }
   .chip.rival { background:#293044; }
+  .saved-stores { margin:0 0 10px; padding:12px; border:1px solid var(--line); border-radius:12px; background:#1c223280; font-size:12px; }
+  .saved-stores summary { cursor:pointer; font-weight:700; color:var(--ink-2); }
+  .saved-help { color:var(--ink-3); font-size:11px; line-height:1.7; margin:10px 0; }
+  .saved-message { font-size:12px; color:#b3e8dc; margin:0 0 18px; overflow-wrap:anywhere; }
+  .saved-message:empty { display:none; }
+  .saved-message.error { color:var(--err-ink); }
+  .saved-controls { grid-column:1 / -1; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; margin-bottom:4px; }
+  .setup .saved-picker { font-size:12px; padding:9px 8px; border-radius:8px; border:1px solid var(--line); }
+  .setup .saved-picker:disabled { color:var(--ink-3); opacity:.7; }
+  .save-store,.delete-saved { min-height:40px; border:1px solid var(--line); border-radius:20px; background:transparent; color:var(--plate); padding:7px 12px; font-size:12px; cursor:pointer; }
+  .saved-item { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; padding:10px 0; border-top:1px solid var(--line); }
+  .saved-item strong { display:block; overflow-wrap:anywhere; }
+  .saved-item span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--ink-3); font-size:11px; }
   @supports not (backdrop-filter:blur(1px)) {
     .setup,.welcome,.toolbar,.panel,.compare,.step { background:#202638; }
   }
@@ -469,6 +482,12 @@
       </div>
       <p class="intro">店舗名と在庫一覧URLを入力してください。</p>
 
+      <details class="saved-stores" id="saved-stores">
+        <summary>登録店舗 <span id="saved-count">0</span>件</summary>
+        <p class="saved-help">このブラウザに保存します。各入力欄の一覧から呼び出せます。</p>
+        <div id="saved-list"></div>
+      </details>
+      <p id="saved-message" class="saved-message" role="status" aria-live="polite"></p>
       <form id="form" novalidate>
         <fieldset>
           <legend><span class="chip own">自社</span><span>基準にする店舗</span></legend>
@@ -649,6 +668,8 @@ const view = { axis: "year", mode: "count", bw: 30, style: "blur", fitAll: false
 let stores = [];   // {key, role, name, url, status: loading|done|error, data, error, el}
 let runId = 0;
 let activeLoad = null;
+const SAVED_STORES_KEY = "inventory-heatmap:registered-stores:v1";
+let savedStores = [];
 
 /* ---------------- サイドメニューの開閉 ---------------- */
 function setCollapsed(c, save = true, moveFocus = true) {
@@ -684,6 +705,7 @@ function addRival(name = "", url = "", focus = false) {
     saveInputs();
   });
   $("#rivals").appendChild(row);
+  attachSavedStoreControls(row);
   if (focus) row.querySelector(".name").focus();
 }
 $("#add").addEventListener("click", () => addRival("", "", true));
@@ -719,6 +741,109 @@ document.querySelector(".setup").addEventListener("change", saveInputs);
 
 const hostOf = u => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (_) { return u; } };
 const validUrl = u => { try { return /^https?:$/.test(new URL(u).protocol); } catch (_) { return false; } };
+
+/* ---------------- 登録店舗（入力の自動保存とは別に保持） ---------------- */
+function savedMessage(message, error = false) {
+  $("#saved-message").textContent = message;
+  $("#saved-message").classList.toggle("error", error);
+}
+
+function loadSavedStores() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(SAVED_STORES_KEY) || "[]");
+    if (!Array.isArray(raw)) throw new Error("Invalid saved stores");
+    savedStores = raw.filter(s => s && typeof s.name === "string" && s.name.trim()
+      && typeof s.url === "string" && validUrl(s.url)).map(s => ({ name: s.name, url: s.url }));
+  } catch (_) {
+    savedMessage("登録店舗を読み込めませんでした。ブラウザの保存設定をご確認ください。", true);
+  }
+}
+
+function persistSavedStores(next) {
+  try {
+    localStorage.setItem(SAVED_STORES_KEY, JSON.stringify(next));
+  } catch (_) {
+    savedMessage("保存できませんでした。ブラウザの保存容量・設定をご確認ください。", true);
+    return false;
+  }
+  savedStores = next;
+  refreshSavedStores();
+  return true;
+}
+
+function attachSavedStoreControls(row) {
+  const controls = document.createElement("div");
+  controls.className = "saved-controls";
+  const select = document.createElement("select");
+  select.className = "saved-picker";
+  select.setAttribute("aria-label", row.classList.contains("own") ? "登録店舗から自社を選ぶ" : "登録店舗から他社を選ぶ");
+  const save = document.createElement("button");
+  save.type = "button"; save.className = "save-store"; save.textContent = "登録";
+  save.title = "この入力欄の社名とURLを登録する";
+  save.addEventListener("click", () => {
+    const name = row.querySelector(".name").value.trim();
+    const url = row.querySelector(".url").value.trim();
+    if (!name || !validUrl(url)) {
+      savedMessage("登録する店舗名と、有効なhttp(s)の在庫一覧URLを入力してください。", true);
+      return;
+    }
+    const canonical = new URL(url).href;
+    if (savedStores.some(s => s.name === name && new URL(s.url).href === canonical)) {
+      savedMessage("この店舗名とURLは登録済みです。");
+      return;
+    }
+    if (persistSavedStores([...savedStores, { name, url: canonical }])) {
+      savedMessage(name + "を登録しました。");
+    }
+  });
+  select.addEventListener("change", () => {
+    const selected = savedStores[Number(select.value)];
+    if (select.value === "" || !selected) return;
+    row.querySelector(".name").value = selected.name;
+    row.querySelector(".url").value = selected.url;
+    select.value = "";
+    saveInputs();
+    savedMessage(selected.name + "を入力欄に呼び出しました。");
+  });
+  controls.append(select, save);
+  row.prepend(controls);
+  fillSavedPicker(select);
+}
+
+function fillSavedPicker(select) {
+  select.replaceChildren(new Option(savedStores.length ? "登録店舗から選ぶ" : "登録店舗はありません", ""));
+  savedStores.forEach((store,index) => {
+    select.add(new Option(store.name + " — " + store.url, String(index)));
+  });
+  select.disabled = !savedStores.length;
+}
+
+function refreshSavedStores() {
+  $("#saved-count").textContent = savedStores.length;
+  document.querySelectorAll(".saved-picker").forEach(fillSavedPicker);
+  const list = $("#saved-list");
+  list.replaceChildren();
+  if (!savedStores.length) {
+    const empty = document.createElement("p");
+    empty.className = "saved-help";
+    empty.textContent = "店舗名とURLを入力し「登録」を押してください。";
+    list.append(empty);
+  }
+  savedStores.forEach((store,index) => {
+    const item = document.createElement("div"); item.className = "saved-item";
+    const label = document.createElement("div");
+    const name = document.createElement("strong"); name.textContent = store.name;
+    const url = document.createElement("span"); url.textContent = store.url; url.title = store.url;
+    label.append(name,url);
+    const remove = document.createElement("button");
+    remove.type = "button"; remove.className = "delete-saved"; remove.textContent = "削除";
+    remove.setAttribute("aria-label", store.name + "の登録を削除");
+    remove.addEventListener("click", () => {
+      if (persistSavedStores(savedStores.filter((_,i) => i !== index))) savedMessage(store.name + "の登録を削除しました。入力中の内容は残しています。");
+    });
+    item.append(label,remove); list.append(item);
+  });
+}
 
 /* ---------------- 取得 ---------------- */
 $("#form").addEventListener("submit", async e => {
@@ -1402,7 +1527,10 @@ function startDemo() {
 }
 $("#try-demo").addEventListener("click", startDemo);
 
+loadSavedStores();
+attachSavedStoreControls($(".store.own"));
 loadInputs();
+refreshSavedStores();
 </script>
 </body>
 </html>
