@@ -636,6 +636,44 @@
     .steps { grid-template-columns:1fr; }
     .sheet-grid { gap:8px; }
   }
+  /* Focus view keeps names, charts and the controls needed to leave or adjust it. */
+  .app.graphs-only,.app.graphs-only.collapsed { grid-template-columns:minmax(0,1fr); }
+  .graphs-only .setup,.graphs-only .workspace-head { display:none; }
+  .graphs-only .board { padding:12px; }
+  .graphs-only .toolbar { position:sticky; top:0; z-index:5; margin:0 0 12px; padding:10px 12px; gap:8px; border-radius:10px; }
+  .graphs-only .toolbar-heading>span:first-child,.graphs-only #layout-description { display:none; }
+  #graph-run-summary { color:var(--ink-3); font-size:11px; margin-right:auto; }
+  .graphs-only .comparison-modes .layout-toggle { min-height:34px; padding:6px 12px; }
+  .graphs-only:not(.graph-settings-open) #graph-display-controls,
+  .graphs-only:not(.graph-settings-open) .display-options,
+  .graphs-only:not(.graph-settings-open) .legend-row .legend { display:none; }
+  .graphs-only .legend-row { padding-top:7px; }
+  .graphs-only .legend-row .category-color-legend { font-size:10px; }
+  .graphs-only .panel>.stats,.graphs-only .panel>.cats,.graphs-only .panel>.notes,.graphs-only .panel>.rows,
+  .graphs-only .overlay-panel>.stats,.graphs-only .overlay-panel>.cats,.graphs-only .overlay-panel>.notes,.graphs-only .overlay-panel>.rows,
+  .graphs-only .overlay-guide,.graphs-only .compare,.graphs-only .src { display:none; }
+  .graphs-only .panel,.graphs-only .panels.fit-all .panel,.graphs-only .overlay-panel { padding:10px 12px; border-radius:10px; }
+  .graphs-only .panel-head { margin:0 0 8px; min-height:24px; }
+  .graphs-only .chart { min-height:0; }
+  .graphs-only .chart .modebar { display:none!important; }
+  .graphs-only #graph-settings[aria-expanded="true"] { background:#494269; color:#f0ecff; border-color:#8c80bd; }
+  .graphs-only .panels.fit-all .plate { padding:0; }
+  .graphs-only .plate-name { font-size:14px; }
+  .graphs-only .panels.fit-all { grid-template-columns:repeat(var(--graph-columns),minmax(0,1fr)); gap:12px; overflow-x:hidden; }
+  .graphs-only .overlay-panel h2 { margin-bottom:0; font-size:14px; }
+  .graphs-only .company-list { margin-bottom:10px; gap:6px; }
+  .graphs-only .company-toggle { min-height:36px; padding:6px 10px; }
+  @media (min-width:900px) {
+    .graphs-only .toolbar-heading { position:absolute; top:13px; right:12px; max-width:250px; }
+    .graphs-only .comparison-modes { padding-right:260px; }
+    .graphs-only #graph-run-summary { max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  }
+  @media (max-width:600px) {
+    .graphs-only .board { padding:8px; }
+    .graphs-only .toolbar { padding:10px; }
+    .graphs-only .comparison-modes .layout-toggle { flex:0 1 auto; min-width:0; min-height:40px; }
+    .graphs-only .panel,.graphs-only .panels.fit-all .panel,.graphs-only .overlay-panel { padding:8px; }
+  }
 </style>
 </head>
 <body>
@@ -737,12 +775,14 @@
         <button type="button" class="edit-stores" id="edit-stores" aria-controls="setup-body">店舗・データを編集</button></div>
     </header>
     <div class="toolbar" id="toolbar" hidden>
-      <div class="toolbar-heading"><span>比較方法</span><span id="layout-description">横スクロール・自社固定</span><button type="button" id="stop-loading" class="stop-loading" hidden>取得を中止</button></div>
+      <div class="toolbar-heading"><span>比較方法</span><span id="layout-description">横スクロール・自社固定</span><span id="graph-run-summary" role="status" aria-live="polite" hidden></span><button type="button" id="stop-loading" class="stop-loading" hidden>取得を中止</button></div>
       <div class="tool-row comparison-modes">
         <button type="button" id="overlay-toggle" class="layout-toggle" aria-pressed="false" aria-controls="overlay-panel">重ねて比較する</button>
         <button type="button" id="fit-all" class="layout-toggle" aria-pressed="false" aria-controls="panels">1画面で比較する</button>
+        <button type="button" id="graphs-only" class="layout-toggle" aria-pressed="false" aria-controls="board">グラフのみ表示</button>
+        <button type="button" id="graph-settings" class="layout-toggle" aria-expanded="false" aria-controls="graph-display-controls display-options" hidden>表示設定</button>
       </div>
-      <div class="tool-row">
+      <div class="tool-row" id="graph-display-controls">
         <div class="ctl">横軸
           <div class="seg" role="radiogroup" aria-label="横軸">
             <input type="radio" name="axis" id="ax-year" value="year" checked><label for="ax-year">年式</label>
@@ -883,13 +923,14 @@ const KM_SPLIT_DEFAULT = 100;   // 走行距離軸の四象限の初期境界 = 
 const catOf = v => v.mileage == null ? "unknown" : CATS.find(c => c.test(v.mileage)).key;
 const catName = key => (CATS.find(c => c.key === key) || CAT_UNKNOWN).name;
 
-const view = { axis: "year", mode: "count", bw: 30, style: "blur", dotSize: 7, fitAll: false, overlay: false, split: { price: null, year: null, km: null } };
+const view = { axis: "year", mode: "count", bw: 30, style: "blur", dotSize: 7, fitAll: false, graphsOnly: false, graphSettings: false, overlay: false, split: { price: null, year: null, km: null } };
 let stores = [];   // {key, role, name, url, status: loading|done|error, data, error, el}
 let runId = 0;
 let activeLoad = null;
 const SAVED_STORES_KEY = "inventory-heatmap:registered-stores:v1";
 let savedStores = [];
 const hiddenCompanies = new Set();
+let graphOnlySidebarState = false;
 let importedSheetStores = [];
 let sheetPreview = null, sheetBusy = false, googleConfigured = false, googleConnected = false;
 
@@ -1433,6 +1474,12 @@ const lg = km => Math.log10(Math.max(km, 1));
 const aRaw = v => view.axis === "year" ? v.year : v.mileage;                       // 横軸の元の値
 const aPos = v => view.axis === "year" ? v.year : (v.mileage == null ? null : lg(v.mileage)); // 横軸上の位置
 
+function compactPriceStep(span,height) {
+  const needed=Math.max(1,span/Math.max(2,Math.floor((height-60)/36)));
+  const scale=10**Math.floor(Math.log10(needed));
+  return [1,2,5,10].map(n=>n*scale).filter(n=>n<=needed).at(-1) || scale;
+}
+
 function niceYearTicks(lo, hi, width) {
   const first = Math.ceil(lo), last = Math.floor(hi);
   const capacity = Math.max(2, Math.floor((width - 76) / 72));
@@ -1613,10 +1660,25 @@ function updateRunSummary() {
 }
 
 function renderAll() {
+  if (!stores.length && view.graphsOnly) {
+    view.graphsOnly=false; view.graphSettings=false;
+    setCollapsed(graphOnlySidebarState,false,false);
+  }
+  $("#app").classList.toggle("graphs-only",view.graphsOnly);
+  $("#app").classList.toggle("graph-settings-open",view.graphSettings);
+  $("#graphs-only").setAttribute("aria-pressed",String(view.graphsOnly));
+  $("#graphs-only").textContent=view.graphsOnly ? "通常表示に戻す" : "グラフのみ表示";
+  $("#graph-settings").hidden=!view.graphsOnly;
+  $("#graph-settings").setAttribute("aria-expanded",String(view.graphSettings));
+  $("#graph-settings").textContent=view.graphSettings ? "表示設定を閉じる" : "表示設定";
   updateRunSummary();
+  $("#graph-run-summary").textContent=$("#run-summary").textContent;
+  $("#graph-run-summary").hidden=!view.graphsOnly;
   const wrap = $("#panels");
   wrap.classList.toggle("fit-all", view.fitAll);
   wrap.style.setProperty("--store-count", Math.max(1, stores.length));
+  const gridColumns=Math.min(Math.max(1,stores.length),2,Math.max(1,Math.floor((wrap.clientWidth+12)/432)));
+  wrap.style.setProperty("--graph-columns",gridColumns);
   $("#fit-all").setAttribute("aria-pressed", String(view.fitAll));
   $("#fit-all").textContent = view.fitAll ? "横スクロールで比較する" : "1画面で比較する";
   wrap.hidden = view.overlay;
@@ -1641,7 +1703,7 @@ function renderAll() {
 function companyMarker(store) {
   if (store.role === "own") return { color: css("--ink-2"), symbol: "circle", size: view.dotSize };
   const index = stores.filter(s => s.role !== "own").indexOf(store);
-  const symbols = ["diamond-open", "square-open", "triangle-up-open", "cross", "star-open", "hexagon-open"];
+  const symbols = ["diamond-open", "square-open", "triangle-up-open", "cross", "star-open", "hexagon-open", "triangle-down-open", "triangle-left-open", "triangle-right-open", "x"];
   return {
     color: css("--ink-2"),
     symbol: symbols[index % symbols.length], size: view.dotSize
@@ -1683,7 +1745,7 @@ function renderCompanyList() {
   const list = $("#company-list");
   const active = document.activeElement?.closest(".company-toggle")?.dataset.companyKey;
   list.replaceChildren();
-  const symbols = { circle:"●", "diamond-open":"◇", "square-open":"□", "triangle-up-open":"△", cross:"＋", "star-open":"☆", "hexagon-open":"⬡" };
+  const symbols = { circle:"●", "diamond-open":"◇", "square-open":"□", "triangle-up-open":"△", cross:"＋", "star-open":"☆", "hexagon-open":"⬡", "triangle-down-open":"▽", "triangle-left-open":"◁", "triangle-right-open":"▷", x:"×" };
   for (const store of stores) {
     const key = String(store.key), marker = companyMarker(store);
     const ready = store.status === "done" && Boolean(store.data?.vehicles.length);
@@ -1776,7 +1838,20 @@ function renderPanel(s, sh) {
   const el = s.el, chart = el.querySelector(".chart"), stats = el.querySelector(".stats"), cats = el.querySelector(".cats");
   const notes = el.querySelector(".notes"), rows = el.querySelector(".rows");
   const isYear = view.axis === "year", isKm = !isYear;
-  const height = 440;
+  let height = 440;
+  if (view.graphsOnly) {
+    const landscapeHeight=Math.floor(chart.clientWidth/1.8);
+    const gridColumns=Number($("#panels").style.getPropertyValue("--graph-columns")) || 1;
+    const minHeight=Math.min(view.fitAll && !s.overlay && gridColumns>1 ? 100 : 140,landscapeHeight);
+    let preferred=440;
+    if (view.fitAll && !s.overlay) {
+      const columns=Number($("#panels").style.getPropertyValue("--graph-columns")) || 1;
+      const rows=Math.ceil(stores.length/columns);
+      const available=innerHeight-$("#toolbar").getBoundingClientRect().bottom-24;
+      preferred=Math.floor((available-(rows-1)*12)/Math.max(1,rows))-52;
+    }
+    height=Math.max(minHeight,Math.min(landscapeHeight,preferred,440));
+  }
   chart.style.height = height + "px";
 
   const placeholder = html => replaceChart(chart,html);
@@ -1880,8 +1955,8 @@ function renderPanel(s, sh) {
     const [x, y, xa, ya] = corner[q];
     return {
       xref: "paper", yref: "paper", x, y, xanchor: xa, yanchor: ya, showarrow: false, align: xa,
-      text: `<b>${p.quad[q]}台</b>  ${pct(p.quad[q], n)}%<br><span style="font-size:10px;color:${ink3}">${QNAME[view.axis][q]}</span>`,
-      font: { size: 13, color: ink }, bgcolor: rgba(panel, .82), borderpad: 4,
+      text: `<b>${p.quad[q]}台</b>  ${pct(p.quad[q], n)}%` + (view.graphsOnly ? "" : `<br><span style="font-size:10px;color:${ink3}">${QNAME[view.axis][q]}</span>`),
+      font: { size: view.graphsOnly ? 10 : 13, color: ink }, bgcolor: rgba(panel, .82), borderpad: 4,
     };
   });
   const shapes = [
@@ -1920,14 +1995,14 @@ function renderPanel(s, sh) {
     },
     yaxis: {
       range: [sh.pmin, sh.pmax], showgrid: false, zeroline: false, automargin: true,
-      dtick: sh.pmax - sh.pmin > 1000 ? 200 : sh.pmax - sh.pmin > 400 ? 100 : 50,
+      dtick: view.graphsOnly ? compactPriceStep(sh.pmax-sh.pmin,height) : sh.pmax - sh.pmin > 1000 ? 200 : sh.pmax - sh.pmin > 400 ? 100 : 50,
       linecolor: line, ticks: "outside", tickcolor: line, ticklen: 4,
       title: { text: "価格（万円）", font: { size: 11 }, standoff: 6 },
     },
     shapes, annotations,
     hoverlabel: { bgcolor: panel, bordercolor: line, font: { color: ink, size: 12 } },
   }, {
-    responsive: false, displaylogo: false, showTips: false, modeBarButtons: [["toImage"]],
+    responsive: false, displayModeBar: !view.graphsOnly, displaylogo: false, showTips: false, modeBarButtons: [["toImage"]],
     toImageButtonOptions: { filename: `在庫四象限_${s.name}`, scale: 2 },
   });
 }
@@ -1974,6 +2049,25 @@ $("#overlay-toggle").addEventListener("click", () => {
   view.overlay = !view.overlay;
   renderAll();
 });
+$("#graphs-only").addEventListener("click",()=>{
+  view.graphsOnly=!view.graphsOnly;
+  if (view.graphsOnly) {
+    graphOnlySidebarState=$("#app").classList.contains("collapsed");
+    setCollapsed(true,false,false);
+  } else {
+    setCollapsed(graphOnlySidebarState,false,false);
+    view.graphSettings=false;
+  }
+  renderAll();
+  if (view.graphsOnly) $("#toolbar").scrollIntoView({block:"start"});
+});
+$("#graph-settings").addEventListener("click",()=>{
+  view.graphSettings=!view.graphSettings;
+  renderAll();
+});
+$("#display-options").addEventListener("toggle",()=>{
+  if(view.graphsOnly && view.fitAll)renderAll();
+});
 $("#fit-all").addEventListener("click", () => {
   view.fitAll = !view.fitAll;
   if (view.fitAll) setCollapsed(true, false, false);
@@ -2003,6 +2097,10 @@ new ResizeObserver(entries => {
     if (stores.some(s => s.status === "done")) renderAll();
   });
 }).observe($(".board"));
+window.addEventListener("resize",()=>{
+  cancelAnimationFrame(resizeFrame);
+  resizeFrame=requestAnimationFrame(()=>{if(stores.some(s=>s.status==="done"))renderAll();});
+});
 const onSplit = (el, key) => el.addEventListener("change", () => {
   const v = el.value.trim() === "" ? null : Number(el.value);
   view.split[key] = Number.isFinite(v) ? v : null;
